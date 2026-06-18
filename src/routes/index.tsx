@@ -402,14 +402,12 @@ function HomePage() {
                   <>
                     {total < 6 ? (
                       /* Simple Grid Layout */
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {galleryImages.map((img, idx) => (
                           <div
                             key={img.id}
                             onClick={() => setLightboxIdx(idx)}
-                            className={`relative group overflow-hidden rounded-2xl shadow-sm border border-border aspect-[4/3] bg-muted cursor-pointer hover:shadow-md transition-all duration-300 ${
-                              idx >= 4 ? "hidden md:block" : ""
-                            }`}
+                            className="relative group overflow-hidden rounded-2xl shadow-sm border border-border aspect-[4/3] bg-muted cursor-pointer hover:shadow-md transition-all duration-300"
                           >
                             <img
                               src={img.image_url}
