@@ -102,10 +102,13 @@ serve(async (req) => {
           return jsonResponse({ error: usersError.message }, 400);
         }
 
+        const nameByUserId = new Map(
+          users.map((u) => [u.id, u.user_metadata?.name || u.raw_user_meta_data?.name]),
+        );
         const emailByUserId = new Map(users.map((staffUser) => [staffUser.id, staffUser.email]));
         const staff = ((roleRows || []) as StaffRoleRow[]).map((roleRow) => ({
           user_id: roleRow.user_id,
-          full_name: roleRow.full_name,
+          full_name: nameByUserId.get(roleRow.user_id) || roleRow.full_name || null,
           email: emailByUserId.get(roleRow.user_id) || null,
           created_at: roleRow.created_at,
         }));

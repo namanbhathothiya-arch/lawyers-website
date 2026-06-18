@@ -5,6 +5,7 @@ import {
   Calendar,
   CalendarOff,
   Clock,
+  Image,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -23,6 +24,7 @@ const adminNav = [
   { to: "/admin/availability", label: "Availability", icon: Clock },
   { to: "/admin/holidays", label: "Holidays", icon: CalendarOff },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
+  { to: "/admin/gallery", label: "Gallery", icon: Image },
 ] as const;
 
 export function AdminPortalShell({

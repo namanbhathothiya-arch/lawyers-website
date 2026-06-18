@@ -21,6 +21,7 @@ import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminHolidaysRouteImport } from './routes/admin/holidays'
+import { Route as AdminGalleryRouteImport } from './routes/admin/gallery'
 import { Route as AdminDoctorsRouteImport } from './routes/admin/doctors'
 import { Route as AdminAvailabilityRouteImport } from './routes/admin/availability'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin/appointments'
@@ -85,6 +86,11 @@ const AdminHolidaysRoute = AdminHolidaysRouteImport.update({
   path: '/admin/holidays',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminGalleryRoute = AdminGalleryRouteImport.update({
+  id: '/admin/gallery',
+  path: '/admin/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDoctorsRoute = AdminDoctorsRouteImport.update({
   id: '/admin/doctors',
   path: '/admin/doctors',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByTo {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
@@ -218,6 +230,7 @@ export interface RootRouteChildren {
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminAvailabilityRoute: typeof AdminAvailabilityRoute
   AdminDoctorsRoute: typeof AdminDoctorsRoute
+  AdminGalleryRoute: typeof AdminGalleryRoute
   AdminHolidaysRoute: typeof AdminHolidaysRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminServicesRoute: typeof AdminServicesRoute
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminHolidaysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/gallery': {
+      id: '/admin/gallery'
+      path: '/admin/gallery'
+      fullPath: '/admin/gallery'
+      preLoaderRoute: typeof AdminGalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/doctors': {
       id: '/admin/doctors'
       path: '/admin/doctors'
@@ -346,6 +366,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminAvailabilityRoute: AdminAvailabilityRoute,
   AdminDoctorsRoute: AdminDoctorsRoute,
+  AdminGalleryRoute: AdminGalleryRoute,
   AdminHolidaysRoute: AdminHolidaysRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminServicesRoute: AdminServicesRoute,
