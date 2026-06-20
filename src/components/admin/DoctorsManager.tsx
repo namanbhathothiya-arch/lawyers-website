@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +17,18 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, RefreshCw, UserCheck, BriefcaseMedical, Upload } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  RefreshCw,
+  UserCheck,
+  BriefcaseMedical,
+  Upload,
+  Sparkles,
+} from "lucide-react";
 import { getDoctorImage } from "@/lib/clinic-data";
+import { cleanDoctorPhoto, isLegacyHeroDoctor, setLegacyHeroDoctor } from "@/lib/hero-content";
 import { getDoctorServiceSyncChanges, uniqueServiceIds } from "@/lib/doctor-service-utils";
 import {
   AlertDialog,
@@ -40,6 +52,7 @@ type AdminDoctor = {
   experience: string;
   photo?: string | null;
   bio?: string | null;
+  is_featured_hero: boolean;
   doctor_services?: DoctorServiceMapping[];
 };
 
@@ -47,6 +60,18 @@ type AdminService = {
   id: string;
   name: string;
 };
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isMissingHeroColumn(error: unknown) {
+  const message =
+    typeof error === "object" && error && "message" in error
+      ? String(error.message)
+      : getErrorMessage(error);
+  return message.includes("is_featured_hero") && message.includes("schema cache");
+}
 
 export function DoctorsManager() {
   const queryClient = useQueryClient();
@@ -63,6 +88,7 @@ export function DoctorsManager() {
   const [experience, setExperience] = useState("");
   const [photo, setPhoto] = useState("");
   const [bio, setBio] = useState("");
+  const [isFeaturedHero, setIsFeaturedHero] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
   // Image Upload states
@@ -131,6 +157,7 @@ export function DoctorsManager() {
     setExperience("");
     setPhoto("");
     setBio("");
+    setIsFeaturedHero(false);
     setSelectedServiceIds([]);
     setImageFile(null);
     setImagePreview("");
@@ -143,8 +170,9 @@ export function DoctorsManager() {
     setName(doc.name);
     setSpecialization(doc.specialization);
     setExperience(doc.experience);
-    setPhoto(doc.photo || "");
+    setPhoto(cleanDoctorPhoto(doc.photo) || "");
     setBio(doc.bio || "");
+    setIsFeaturedHero(doc.is_featured_hero || isLegacyHeroDoctor(doc.photo));
     setSelectedServiceIds((doc.doctor_services || []).map((mapping) => mapping.service_id));
     setImageFile(null);
     setImagePreview(doc.photo || "");
@@ -231,7 +259,7 @@ export function DoctorsManager() {
               }
             },
             file.type === "image/png" ? "image/png" : "image/jpeg",
-            0.85
+            0.85,
           );
         };
         img.onerror = (err) => reject(err);
@@ -251,7 +279,7 @@ export function DoctorsManager() {
         try {
           // Compress the image
           const compressedBlob = await compressImage(imageFile);
-          
+
           // Construct clean upload path
           const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
           const filePath = `${doctorId}/${cleanFileName}`;
@@ -267,14 +295,14 @@ export function DoctorsManager() {
           if (uploadError) throw uploadError;
 
           // Retrieve public url
-          const { data: { publicUrl } } = supabase.storage
-            .from("doctor-images")
-            .getPublicUrl(filePath);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("doctor-images").getPublicUrl(filePath);
 
           uploadedPhotoUrl = publicUrl;
           toast.success("Image uploaded successfully", { id: toastId });
-        } catch (uploadErr: any) {
-          toast.error(`Upload failed: ${uploadErr.message || uploadErr}`, { id: toastId });
+        } catch (uploadErr: unknown) {
+          toast.error(`Upload failed: ${getErrorMessage(uploadErr)}`, { id: toastId });
           throw uploadErr;
         }
       }
@@ -285,6 +313,14 @@ export function DoctorsManager() {
         experience,
         photo: uploadedPhotoUrl || null,
         bio: bio || null,
+        is_featured_hero: isFeaturedHero,
+      };
+      const legacyPayload = {
+        name,
+        specialization,
+        experience,
+        photo: setLegacyHeroDoctor(uploadedPhotoUrl || null, isFeaturedHero),
+        bio: bio || null,
       };
 
       if (editingDoctor) {
@@ -293,14 +329,53 @@ export function DoctorsManager() {
           .from("doctors")
           .update(docPayload)
           .eq("id", editingDoctor.id);
-        if (error) throw error;
+        if (error) {
+          if (!isMissingHeroColumn(error)) throw error;
+          if (isFeaturedHero) {
+            await Promise.all(
+              (doctors || [])
+                .filter(
+                  (doctor) => doctor.id !== editingDoctor.id && isLegacyHeroDoctor(doctor.photo),
+                )
+                .map((doctor) =>
+                  supabase
+                    .from("doctors")
+                    .update({ photo: cleanDoctorPhoto(doctor.photo) })
+                    .eq("id", doctor.id),
+                ),
+            );
+          }
+          const { error: retryError } = await supabase
+            .from("doctors")
+            .update(legacyPayload)
+            .eq("id", editingDoctor.id);
+          if (retryError) throw retryError;
+          toast.success("Doctor saved and selected for the Hero Section.");
+        }
         await syncDoctorServices(editingDoctor.id);
       } else {
         // Create (with custom id)
-        const { error } = await supabase
-          .from("doctors")
-          .insert([{ id: doctorId, ...docPayload }]);
-        if (error) throw error;
+        const { error } = await supabase.from("doctors").insert([{ id: doctorId, ...docPayload }]);
+        if (error) {
+          if (!isMissingHeroColumn(error)) throw error;
+          if (isFeaturedHero) {
+            await Promise.all(
+              (doctors || [])
+                .filter((doctor) => isLegacyHeroDoctor(doctor.photo))
+                .map((doctor) =>
+                  supabase
+                    .from("doctors")
+                    .update({ photo: cleanDoctorPhoto(doctor.photo) })
+                    .eq("id", doctor.id),
+                ),
+            );
+          }
+          const { error: retryError } = await supabase
+            .from("doctors")
+            .insert([{ id: doctorId, ...legacyPayload }]);
+          if (retryError) throw retryError;
+          toast.success("Doctor saved and selected for the Hero Section.");
+        }
         await syncDoctorServices(doctorId);
       }
     },
@@ -309,6 +384,7 @@ export function DoctorsManager() {
       queryClient.invalidateQueries({ queryKey: ["doctors"] });
       queryClient.invalidateQueries({ queryKey: ["service-doctors"] });
       queryClient.invalidateQueries({ queryKey: ["admin-count"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       toast.success(editingDoctor ? "Doctor updated successfully!" : "Doctor added successfully!");
       setIsOpen(false);
     },
@@ -325,7 +401,7 @@ export function DoctorsManager() {
         const { data: files, error: listError } = await supabase.storage
           .from("doctor-images")
           .list(id);
-        
+
         if (!listError && files && files.length > 0) {
           const filesToRemove = files.map((file) => `${id}/${file.name}`);
           const { error: removeError } = await supabase.storage
@@ -346,6 +422,7 @@ export function DoctorsManager() {
       queryClient.invalidateQueries({ queryKey: ["doctors"] });
       queryClient.invalidateQueries({ queryKey: ["service-doctors"] });
       queryClient.invalidateQueries({ queryKey: ["admin-count"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       toast.success("Doctor record deleted successfully.");
     },
     onError: (err: Error) => {
@@ -413,6 +490,12 @@ export function DoctorsManager() {
                     alt={d.name}
                     className="h-full w-full object-cover object-top"
                   />
+                  {(d.is_featured_hero || isLegacyHeroDoctor(d.photo)) && (
+                    <Badge className="absolute left-3 top-3 gap-1.5 bg-primary text-primary-foreground shadow">
+                      <Sparkles className="h-3 w-3" aria-hidden="true" />
+                      Hero Doctor
+                    </Badge>
+                  )}
                   <div className="absolute top-3 right-3 flex gap-1.5">
                     <Button
                       size="icon"
@@ -467,149 +550,167 @@ export function DoctorsManager() {
             </DialogHeader>
             <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="doc-name">
-                  Full name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="doc-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Dr. Aisha Rao"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="doc-spec">
-                    Specialization <span className="text-destructive">*</span>
+                  <Label htmlFor="doc-name">
+                    Full name <span className="text-destructive">*</span>
                   </Label>
                   <Input
-                    id="doc-spec"
-                    value={specialization}
-                    onChange={(e) => setSpecialization(e.target.value)}
-                    placeholder="e.g. General Physician"
+                    id="doc-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Dr. Raj Sharma"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="doc-exp">
-                    Experience <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="doc-exp"
-                    value={experience}
-                    onChange={(e) => setExperience(e.target.value)}
-                    placeholder="e.g. 8 years"
-                  />
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Doctor Photo</Label>
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const files = e.dataTransfer.files;
-                    if (files && files.length > 0) {
-                      handleSelectedFile(files[0]);
-                    }
-                  }}
-                  className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center gap-2 bg-secondary/5 max-h-[220px] overflow-hidden"
-                  onClick={() => document.getElementById("doc-photo-file")?.click()}
-                >
-                  <input
-                    id="doc-photo-file"
-                    type="file"
-                    accept="image/png, image/jpeg, image/jpg, image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const files = e.target.files;
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="doc-spec">
+                      Specialization <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="doc-spec"
+                      value={specialization}
+                      onChange={(e) => setSpecialization(e.target.value)}
+                      placeholder="e.g. General Physician"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="doc-exp">
+                      Experience <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="doc-exp"
+                      value={experience}
+                      onChange={(e) => setExperience(e.target.value)}
+                      placeholder="e.g. 8 years"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Doctor Photo</Label>
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const files = e.dataTransfer.files;
                       if (files && files.length > 0) {
                         handleSelectedFile(files[0]);
                       }
                     }}
-                  />
-                  {imagePreview ? (
-                    <div className="relative group w-32 h-32 max-h-[200px] rounded-xl overflow-hidden shadow border border-border">
-                      <img
-                        src={imagePreview}
-                        alt="Doctor Preview"
-                        className="w-full h-full object-cover object-top max-h-[200px]"
-                      />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-xs font-semibold">Change Photo</span>
+                    className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center gap-2 bg-secondary/5 max-h-[220px] overflow-hidden"
+                    onClick={() => document.getElementById("doc-photo-file")?.click()}
+                  >
+                    <input
+                      id="doc-photo-file"
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        if (files && files.length > 0) {
+                          handleSelectedFile(files[0]);
+                        }
+                      }}
+                    />
+                    {imagePreview ? (
+                      <div className="relative group w-32 h-32 max-h-[200px] rounded-xl overflow-hidden shadow border border-border">
+                        <img
+                          src={imagePreview}
+                          alt="Doctor Preview"
+                          className="w-full h-full object-cover object-top max-h-[200px]"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-xs font-semibold">Change Photo</span>
+                        </div>
                       </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
+                        <p className="text-sm font-medium">Drag photo here</p>
+                        <p className="text-xs text-muted-foreground">or click to Select Image</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Supported formats: JPG, JPEG, PNG, WEBP. Max size: 5 MB.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="doc-bio">Short Biography</Label>
+                  <Textarea
+                    id="doc-bio"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    placeholder="Describe doctor clinical interests, background..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
+                  <div>
+                    <Label htmlFor="feature-hero-doctor" className="font-semibold">
+                      Feature on Hero Section
+                    </Label>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Selecting this doctor automatically replaces the current hero doctor.
+                    </p>
+                  </div>
+                  <Switch
+                    id="feature-hero-doctor"
+                    checked={isFeaturedHero}
+                    onCheckedChange={setIsFeaturedHero}
+                    aria-label="Feature on Hero Section"
+                  />
+                </div>
+
+                <div className="space-y-3 rounded-xl border border-border p-4">
+                  <div>
+                    <Label>Services Provided</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Select every service this doctor can be booked for.
+                    </p>
+                  </div>
+
+                  {loadingServices ? (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                      Loading services...
                     </div>
+                  ) : errorServices ? (
+                    <p className="text-sm text-destructive">
+                      Failed to load services: {servicesError?.message || "Unknown error"}
+                    </p>
+                  ) : !services || services.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      No services exist yet. Add services before assigning them to doctors.
+                    </p>
                   ) : (
-                    <div className="space-y-1">
-                      <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
-                      <p className="text-sm font-medium">Drag photo here</p>
-                      <p className="text-xs text-muted-foreground">or click to Select Image</p>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {services.map((service) => (
+                        <label
+                          key={service.id}
+                          htmlFor={`service-${service.id}`}
+                          className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/30 cursor-pointer"
+                        >
+                          <Checkbox
+                            id={`service-${service.id}`}
+                            checked={selectedServiceIds.includes(service.id)}
+                            onCheckedChange={(checked) =>
+                              toggleService(service.id, checked === true)
+                            }
+                          />
+                          <span className="font-medium">{service.name}</span>
+                        </label>
+                      ))}
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Supported formats: JPG, JPEG, PNG, WEBP. Max size: 5 MB.
-                </p>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="doc-bio">Short Biography</Label>
-                <Textarea
-                  id="doc-bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Describe doctor clinical interests, background..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-3 rounded-xl border border-border p-4">
-                <div>
-                  <Label>Services Provided</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Select every service this doctor can be booked for.
-                  </p>
-                </div>
-
-                {loadingServices ? (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                    Loading services...
-                  </div>
-                ) : errorServices ? (
-                  <p className="text-sm text-destructive">
-                    Failed to load services: {servicesError?.message || "Unknown error"}
-                  </p>
-                ) : !services || services.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">
-                    No services exist yet. Add services before assigning them to doctors.
-                  </p>
-                ) : (
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {services.map((service) => (
-                      <label
-                        key={service.id}
-                        htmlFor={`service-${service.id}`}
-                        className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/30 cursor-pointer"
-                      >
-                        <Checkbox
-                          id={`service-${service.id}`}
-                          checked={selectedServiceIds.includes(service.id)}
-                          onCheckedChange={(checked) => toggleService(service.id, checked === true)}
-                        />
-                        <span className="font-medium">{service.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               </div>
 
               <DialogFooter className="p-6 border-t border-border shrink-0 bg-background">

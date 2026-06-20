@@ -1,17 +1,25 @@
 import doc1 from "@/assets/doctor-1.jpg";
-import doc2 from "@/assets/doctor-2.jpg";
-import doc3 from "@/assets/doctor-3.jpg";
-import doc4 from "@/assets/doctor-4.jpg";
 
 export const CLINIC = {
-  name: "Advanced Care Medical Clinic",
-  tagline: "Compassionate care, advanced medicine.",
-  phone: "+91 7597677113",
-  whatsapp: "91 7597677113",
-  email: "nk6225003@gmail.com",
-  address: "12 Wellness Avenue, MG Road, Bengaluru, KA 560001",
-  mapsEmbed:
-    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.123!2d77.5946!3d12.9716!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU4JzE3LjgiTiA3N8KwMzUnNDAuNiJF!5e0!3m2!1sen!2sin!4v1700000000000",
+  name: "HeartCare Advanced Clinic",
+  tagline: "Advanced Cardiac Care with Compassion",
+  doctor: "Dr. Raj Sharma",
+  specialization: "Interventional Cardiology",
+  phone: "+91 9876543210",
+  emergencyPhone: "+91 9876543210",
+  whatsapp: "919876543210",
+  email: "contact@heartcareclinic.com",
+  address: "123 Medical Plaza, New Delhi",
+  workingDays: "Monday-Saturday",
+  workingHours: "9:00 AM - 6:00 PM",
+  mapsEmbed: "https://www.google.com/maps?q=123%20Medical%20Plaza%2C%20New%20Delhi&output=embed",
+  socials: {
+    facebook: "",
+    instagram: "",
+    linkedin: "",
+    youtube: "",
+    x: "",
+  },
 };
 
 export type Doctor = {
@@ -25,36 +33,12 @@ export type Doctor = {
 
 export const DOCTORS: Doctor[] = [
   {
-    id: "dr-aisha-rao",
-    name: "Dr. Aisha Rao",
-    specialization: "General Physician",
-    experience: "8 years",
+    id: "dr-raj-sharma",
+    name: "Dr. Raj Sharma",
+    specialization: "Interventional Cardiology",
+    experience: "Experienced specialist",
     photo: doc1,
-    bio: "Primary care, preventive health and chronic disease management.",
-  },
-  {
-    id: "dr-michael-chen",
-    name: "Dr. Michael Chen",
-    specialization: "Cardiologist",
-    experience: "12 years",
-    photo: doc2,
-    bio: "Interventional cardiology, hypertension and heart-health screenings.",
-  },
-  {
-    id: "dr-sofia-martinez",
-    name: "Dr. Sofia Martinez",
-    specialization: "Dermatologist",
-    experience: "9 years",
-    photo: doc3,
-    bio: "Medical and cosmetic dermatology for all skin types.",
-  },
-  {
-    id: "dr-arjun-mehta",
-    name: "Dr. Arjun Mehta",
-    specialization: "Orthopedic Surgeon",
-    experience: "18 years",
-    photo: doc4,
-    bio: "Joint replacement, sports injuries and spine care.",
+    bio: "Compassionate, advanced cardiac care with expertise in interventional cardiology.",
   },
 ];
 
@@ -123,21 +107,18 @@ export const TESTIMONIALS = [
   },
   {
     name: "Rohan K.",
-    text: "Clean, modern, and on-time appointments. My family now sees Dr. Chen for everything cardiac-related.",
+    text: "Clean, modern, and on-time appointments. Dr. Raj Sharma explained every step of my cardiac care clearly.",
     role: "Patient",
   },
   {
     name: "Meera J.",
-    text: "From reception to consultation, the experience felt genuinely caring. Highly recommend Advanced Care.",
+    text: "From reception to consultation, the experience felt genuinely caring. Highly recommend HeartCare Advanced Clinic.",
     role: "Patient",
   },
 ];
 
 export const DOCTOR_IMAGES: Record<string, string> = {
-  "dr-aisha-rao": doc1,
-  "dr-michael-chen": doc2,
-  "dr-sofia-martinez": doc3,
-  "dr-arjun-mehta": doc4,
+  "dr-raj-sharma": doc1,
 };
 
 export function getDoctorImage(id: string, dbPhoto?: string | null) {

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /staff
 
-Sitemap: https://advancedcareclinic.com/sitemap.xml
+Sitemap: https://heartcareclinic.com/sitemap.xml

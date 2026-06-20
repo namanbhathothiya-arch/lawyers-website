@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Briefcase, Calendar, Clock, Users } from "lucide-react";
+import { Briefcase, Calendar, CircleHelp, Clock, Users } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { AdminPortalShell } from "@/components/admin/AdminPortalShell";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
-    meta: [{ title: "Admin Dashboard — Advanced Care Medical Clinic" }],
+    meta: [{ title: "Admin Dashboard — HeartCare Advanced Clinic" }],
   }),
   component: () => (
     <AdminGuard>
@@ -52,6 +52,17 @@ function AdminDashboard() {
     },
   });
 
+  const { data: faqCount, isLoading: loadingFaqs } = useQuery({
+    queryKey: ["admin-count", "faqs"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("faqs")
+        .select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   return (
     <AdminPortalShell title="Dashboard">
       <div className="space-y-8">
@@ -63,7 +74,7 @@ function AdminDashboard() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardCard
             label="Total Appointments"
             count={apptCount}
@@ -87,6 +98,14 @@ function AdminDashboard() {
             icon={Briefcase}
             color="text-purple-500 bg-purple-500/10"
             to="/admin/services"
+          />
+          <DashboardCard
+            label="FAQs"
+            count={faqCount}
+            loading={loadingFaqs}
+            icon={CircleHelp}
+            color="text-amber-500 bg-amber-500/10"
+            to="/admin/faqs"
           />
         </div>
       </div>

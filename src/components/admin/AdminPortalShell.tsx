@@ -9,11 +9,13 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  CircleHelp,
   Stethoscope,
   Users,
   UserCog,
+  MessageSquareQuote,
 } from "lucide-react";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 
 const adminNav = [
@@ -25,6 +27,8 @@ const adminNav = [
   { to: "/admin/holidays", label: "Holidays", icon: CalendarOff },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
   { to: "/admin/gallery", label: "Gallery", icon: Image },
+  { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
+  { to: "/admin/faqs", label: "FAQs", icon: CircleHelp },
 ] as const;
 
 export function AdminPortalShell({
@@ -52,7 +56,7 @@ export function AdminPortalShell({
         className={cn(
           "w-64 border-r border-border bg-background flex flex-col transition-transform duration-300 ease-in-out z-50",
           "fixed inset-y-0 left-0 md:sticky md:top-0 md:h-screen md:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
         <div className="h-16 px-6 border-b border-border flex items-center gap-2">

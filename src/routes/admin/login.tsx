@@ -1,40 +1,82 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/hooks/use-auth";
 import { Stethoscope } from "lucide-react";
 import { getPostLoginPath } from "@/lib/role-routing";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
     meta: [
-      { title: "Admin Login — Advanced Care Medical Clinic" },
-      { name: "description", content: "Sign in to the Advanced Care Medical Clinic admin panel." },
+      { title: "Admin Login — HeartCare Advanced Clinic" },
+      { name: "description", content: "Sign in to the HeartCare Advanced Clinic admin panel." },
     ],
   }),
   component: AdminLoginPage,
 });
+
+type PortalAccess = {
+  role: string;
+};
+
+function getAuthErrorMessage(error: unknown) {
+  const authError = error as { code?: string; message?: string };
+
+  if (
+    authError.code === "invalid_credentials" ||
+    authError.code === "invalid_grant" ||
+    authError.message?.toLowerCase().includes("invalid login credentials")
+  ) {
+    return "Invalid credentials";
+  }
+
+  return authError.message || "Unable to sign in.";
+}
 
 function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { user, role } = useAuth();
+  const { user, role, loading } = useAuth();
 
-  // If already logged in as admin or staff, redirect to the correct portal.
-  if (user && (role === "admin" || role === "staff")) {
-    navigate({ to: getPostLoginPath(role) });
-    return null;
+  async function fetchPortalAccess(userId: string): Promise<PortalAccess> {
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    if (roleError || !roleData?.role) {
+      throw new Error("Access denied: no portal role was found for this account.");
+    }
+
+    return {
+      role: roleData.role as string,
+    };
   }
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (user && role === "staff") {
+      navigate({ to: getPostLoginPath(role) });
+      return;
+    }
+
+    if (user && role === "admin") {
+      navigate({ to: getPostLoginPath(role) });
+    }
+  }, [user, role, loading, navigate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (!email || !password) {
       toast.error("Please enter email and password");
       return;
@@ -51,28 +93,21 @@ function AdminLoginPage() {
       });
 
       if (error) throw error;
+      if (!session?.user) throw new Error("Unable to create a session for this account.");
 
-      if (session?.user) {
-        // Query user roles to verify portal access.
-        const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
+      const portalAccess = await fetchPortalAccess(session.user.id);
+      const resolvedRole = portalAccess.role;
 
-        if (roleError || !["admin", "staff"].includes(roleData?.role || "")) {
-          // Access denied, sign them out immediately
-          await supabase.auth.signOut();
-          toast.error("Access denied: admin or staff role required.");
-          return;
-        }
-
-        toast.success("Welcome back!");
-        navigate({ to: getPostLoginPath(roleData.role) });
+      if (!["admin", "staff"].includes(resolvedRole)) {
+        await supabase.auth.signOut();
+        throw new Error("Access denied: admin or staff role required.");
       }
+
+      toast.success("Welcome back!");
+      navigate({ to: getPostLoginPath(resolvedRole) });
     } catch (err: unknown) {
       console.error(err);
-      toast.error(err instanceof Error ? err.message : "Invalid login credentials");
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -86,9 +121,7 @@ function AdminLoginPage() {
             <Stethoscope className="h-6 w-6" />
           </div>
           <CardTitle className="text-2xl font-bold">Clinic Portal</CardTitle>
-          <CardDescription>
-            Sign in to manage appointments, schedules, and holidays.
-          </CardDescription>
+          <CardDescription>Admins and staff sign in with email and password.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

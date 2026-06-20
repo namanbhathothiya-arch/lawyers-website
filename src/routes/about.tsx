@@ -5,31 +5,31 @@ import { CLINIC } from "@/lib/clinic-data";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Advanced Care Medical Clinic" },
+      { title: "About — HeartCare Advanced Clinic" },
       {
         name: "description",
         content:
-          "About Advanced Care Medical Clinic — our mission, values, and the team behind compassionate, modern healthcare.",
+          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
       },
-      { property: "og:title", content: "About — Advanced Care Medical Clinic" },
+      { property: "og:title", content: "About — HeartCare Advanced Clinic" },
       {
         property: "og:description",
         content:
-          "About Advanced Care Medical Clinic — our mission, values, and the team behind compassionate, modern healthcare.",
+          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://advancedcareclinic.com/about" },
-      { property: "og:image", content: "https://advancedcareclinic.com/og-image.jpg" },
+      { property: "og:url", content: "https://heartcareclinic.com/about" },
+      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "About — Advanced Care Medical Clinic" },
+      { name: "twitter:title", content: "About — HeartCare Advanced Clinic" },
       {
         name: "twitter:description",
         content:
-          "About Advanced Care Medical Clinic — our mission, values, and the team behind compassionate, modern healthcare.",
+          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
       },
-      { name: "twitter:image", content: "https://advancedcareclinic.com/og-image.jpg" },
+      { name: "twitter:image", content: "https://heartcareclinic.com/og-image.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://advancedcareclinic.com/about" }],
+    links: [{ rel: "canonical", href: "https://heartcareclinic.com/about" }],
   }),
   component: AboutPage,
 });
@@ -42,11 +42,13 @@ function AboutPage() {
           <div className="text-xs font-semibold uppercase tracking-wider text-primary">
             About us
           </div>
-          <h1 className="mt-2 text-4xl sm:text-5xl font-bold">Healthcare that feels human.</h1>
+          <h1 className="mt-2 text-4xl sm:text-5xl font-bold">
+            Advanced cardiac care with compassion.
+          </h1>
           <p className="mt-5 text-lg text-muted-foreground">
-            {CLINIC.name} was founded on a simple belief: great medicine should feel personal. We
-            bring together experienced specialists, modern facilities, and unhurried consultations —
-            so you get the care you'd want for your own family.
+            {CLINIC.name} is led by {CLINIC.doctor}, a specialist in {CLINIC.specialization}.
+            We combine advanced cardiac expertise, modern facilities, and attentive consultations
+            to provide clear, compassionate care for every patient.
           </p>
         </div>
 
@@ -56,7 +58,7 @@ function AboutPage() {
             {
               icon: ShieldCheck,
               t: "Clinical excellence",
-              d: "Evidence-based protocols across every specialty.",
+              d: "Evidence-based protocols for advanced cardiac care.",
             },
             {
               icon: HeartPulse,
@@ -65,10 +67,10 @@ function AboutPage() {
             },
             {
               icon: Award,
-              t: "Senior specialists",
-              d: "Average 10+ years of practice across our team.",
+              t: "Specialist expertise",
+              d: "Interventional cardiology led by Dr. Raj Sharma.",
             },
-            { icon: Users, t: "Family care", d: "From pediatrics to geriatrics — under one roof." },
+            { icon: Users, t: "Continuity of care", d: "Support through diagnosis, treatment, and follow-up." },
           ].map((v) => (
             <div key={v.t} className="rounded-2xl border border-border p-6 bg-card">
               <div className="h-10 w-10 rounded-xl bg-primary-light text-primary grid place-items-center">
@@ -86,16 +88,15 @@ function AboutPage() {
           <div>
             <h2 className="text-3xl font-bold">Our mission</h2>
             <p className="mt-4 text-muted-foreground">
-              To make high-quality, specialist-led healthcare effortlessly accessible — without
-              compromising warmth or time. Every interaction is designed to be calm, clear, and
-              considered.
+              To make advanced cardiac care accessible without compromising compassion, clarity,
+              or time. Every interaction is designed to help patients feel informed and supported.
             </p>
           </div>
           <div>
             <h2 className="text-3xl font-bold">Our facility</h2>
             <p className="mt-4 text-muted-foreground">
-              Modern consultation suites, on-site diagnostics, sterile minor-procedure rooms and
-              accessible design — engineered for both clinical precision and patient comfort.
+              Modern consultation facilities and a patient-focused environment support precise
+              cardiac assessment, treatment planning, and comfortable follow-up care.
             </p>
           </div>
         </div>

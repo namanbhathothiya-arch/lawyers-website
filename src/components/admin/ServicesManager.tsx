@@ -10,12 +10,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, RefreshCw, Briefcase } from "lucide-react";
+import { Plus, Edit2, Trash2, RefreshCw, Briefcase, ChevronDown } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,10 +26,18 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface AdminService {
+  id: string;
+  name: string;
+  description: string | null;
+  price: string;
+}
+
 export function ServicesManager() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
-  const [editingService, setEditingService] = useState<any | null>(null);
+  const [editingService, setEditingService] = useState<AdminService | null>(null);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   // Deletion confirmation state
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -48,7 +55,7 @@ export function ServicesManager() {
     isError,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<AdminService[]>({
     queryKey: ["admin-services"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -70,7 +77,7 @@ export function ServicesManager() {
   }
 
   // Open modal for Editing
-  function handleEditOpen(svc: any) {
+  function handleEditOpen(svc: AdminService) {
     setEditingService(svc);
     setName(svc.name);
     setDescription(svc.description || "");
@@ -109,8 +116,8 @@ export function ServicesManager() {
       );
       setIsOpen(false);
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to save service.");
+    onError: (err: unknown) => {
+      toast.error(getErrorMessage(err, "Failed to save service."));
     },
   });
 
@@ -126,8 +133,10 @@ export function ServicesManager() {
       queryClient.invalidateQueries({ queryKey: ["admin-count"] });
       toast.success("Service deleted successfully.");
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to delete service. Ensure no appointments reference it.");
+    onError: (err: unknown) => {
+      toast.error(
+        getErrorMessage(err, "Failed to delete service. Ensure no appointments reference it."),
+      );
     },
   });
 
@@ -138,6 +147,13 @@ export function ServicesManager() {
       return;
     }
     saveMutation.mutate();
+  }
+
+  function toggleDescription(serviceId: string) {
+    setExpandedDescriptions((current) => ({
+      ...current,
+      [serviceId]: !current[serviceId],
+    }));
   }
 
   return (
@@ -180,21 +196,21 @@ export function ServicesManager() {
         ) : (
           /* LIST GRID */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((s: any) => (
+            {services.map((s) => (
               <Card
                 key={s.id}
-                className="border-border bg-background hover:shadow-md transition-shadow relative flex flex-col justify-between"
+                className="border-border bg-background hover:shadow-md transition-shadow relative flex min-w-0 flex-col justify-between overflow-hidden"
               >
                 <CardHeader className="pb-2 flex flex-row items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="font-semibold text-lg flex items-center gap-1.5">
-                      <Briefcase className="h-4 w-4 text-primary" /> {s.name}
+                  <div className="min-w-0 space-y-1">
+                    <h3 className="flex min-w-0 items-start gap-1.5 break-words text-lg font-semibold [overflow-wrap:anywhere]">
+                      <Briefcase className="mt-1 h-4 w-4 shrink-0 text-primary" /> {s.name}
                     </h3>
-                    <span className="inline-block text-sm font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10">
+                    <span className="inline-block max-w-full break-words rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-bold text-primary [overflow-wrap:anywhere]">
                       {s.price}
                     </span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex shrink-0 gap-1">
                     <Button
                       size="icon"
                       variant="outline"
@@ -217,10 +233,32 @@ export function ServicesManager() {
                     </Button>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-2 flex-1">
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {s.description || "No description provided."}
-                  </p>
+                <CardContent className="min-w-0 flex-1 pt-2">
+                  <div className="min-w-0">
+                    <p
+                      className={`min-w-0 break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere] ${
+                        expandedDescriptions[s.id] ? "" : "max-h-[3.75rem] overflow-hidden"
+                      }`}
+                    >
+                      {s.description || "No description provided."}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 h-8 px-0 text-xs font-bold text-primary hover:bg-transparent hover:text-primary/75"
+                      onClick={() => toggleDescription(s.id)}
+                      aria-label={`${expandedDescriptions[s.id] ? "Collapse" : "Expand"} description for ${s.name}`}
+                    >
+                      {expandedDescriptions[s.id] ? "Show less" : "Expand"}
+                      <ChevronDown
+                        className={`ml-1 h-3.5 w-3.5 transition-transform ${
+                          expandedDescriptions[s.id] ? "rotate-180" : ""
+                        }`}
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -316,4 +354,8 @@ export function ServicesManager() {
       </CardContent>
     </Card>
   );
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }

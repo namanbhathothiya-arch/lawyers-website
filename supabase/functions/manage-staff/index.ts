@@ -68,14 +68,10 @@ serve(async (req) => {
       return jsonResponse({ error: "Invalid admin session." }, 401);
     }
 
-    const { data: callerRole, error: roleError } = await userClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+    const { data: isApprovedAdmin, error: adminCheckError } = await userClient.rpc("is_admin");
 
-    if (roleError || callerRole?.role !== "admin") {
-      return jsonResponse({ error: "Admin role required." }, 403);
+    if (adminCheckError || isApprovedAdmin !== true) {
+      return jsonResponse({ error: "Admin access is required." }, 403);
     }
 
     const adminClient = createClient(supabaseUrl, serviceKey);

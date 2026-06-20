@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, Plus, Trash2, Edit2, Upload, RefreshCw, Image as ImageIcon } from "lucide-react";
+import { GripVertical, Plus, Trash2, Edit2, Upload, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { cleanHeroImageUrl, isLegacyHeroImage, setLegacyHeroImage } from "@/lib/hero-content";
 import {
   Dialog,
   DialogContent,
@@ -30,18 +34,33 @@ type GalleryImage = {
   id: string;
   image_url: string;
   title: string | null;
+  description: string | null;
   sort_order: number;
+  is_hero_image: boolean;
   created_at: string;
 };
 
 // Helper to extract file path from public Supabase Storage URL
 function getStoragePathFromUrl(url: string, bucketName = "clinic-gallery"): string | null {
+  url = cleanHeroImageUrl(url);
   const marker = `/public/${bucketName}/`;
   const index = url.indexOf(marker);
   if (index !== -1) {
     return url.substring(index + marker.length);
   }
   return null;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isMissingHeroColumn(error: unknown) {
+  const message =
+    typeof error === "object" && error && "message" in error
+      ? String(error.message)
+      : getErrorMessage(error);
+  return message.includes("is_hero_image") && message.includes("schema cache");
 }
 
 export function GalleryManager() {
@@ -53,6 +72,9 @@ export function GalleryManager() {
 
   // Form states
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [sortOrder, setSortOrder] = useState("0");
+  const [isHeroImage, setIsHeroImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
 
@@ -105,7 +127,11 @@ export function GalleryManager() {
   };
 
   // Helper to compress image
-  async function compressImage(file: File, maxWidth = 1200, maxHeight = 1200): Promise<Blob> {
+  async function compressImage(
+    file: File,
+    maxWidth = 1600,
+    maxHeight = 1600,
+  ): Promise<{ blob: Blob; extension: string; contentType: string }> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
@@ -137,73 +163,102 @@ export function GalleryManager() {
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                resolve(blob);
+                const contentType = file.type === "image/png" ? "image/png" : "image/jpeg";
+                resolve({
+                  blob,
+                  contentType,
+                  extension: contentType === "image/png" ? "png" : "jpg",
+                });
               } else {
                 reject(new Error("Image compression failed."));
               }
             },
             file.type === "image/png" ? "image/png" : "image/jpeg",
-            0.85
+            0.85,
           );
         };
         img.onerror = (err) => reject(err);
       };
       reader.onerror = (err) => reject(err);
     });
-  };
+  }
 
   // Upload/Add Mutation
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!imageFile) throw new Error("Please select an image to upload.");
+      if (!title.trim()) throw new Error("A title is required.");
 
       const toastId = toast.loading("Compressing & uploading image...");
       try {
-        const compressedBlob = await compressImage(imageFile);
+        const compressedImage = await compressImage(imageFile);
         const uuid = crypto.randomUUID();
-        const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const filePath = `${uuid}/${cleanFileName}`;
+        const sourceName = imageFile.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+        const filePath = `${uuid}/${sourceName || "clinic-photo"}.${compressedImage.extension}`;
 
         // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from("clinic-gallery")
-          .upload(filePath, compressedBlob, {
-            contentType: imageFile.type,
+          .upload(filePath, compressedImage.blob, {
+            contentType: compressedImage.contentType,
             upsert: true,
           });
         if (uploadError) throw uploadError;
 
         // Public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from("clinic-gallery")
-          .getPublicUrl(filePath);
-
-        // Calculate next sort order
-        const nextSortOrder = images && images.length > 0
-          ? Math.max(...images.map(img => img.sort_order)) + 1
-          : 0;
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("clinic-gallery").getPublicUrl(filePath);
 
         // Insert database record
-        const { error: dbError } = await supabase.from("gallery_images").insert([
-          {
-            image_url: publicUrl,
-            title: title.trim() || null,
-            sort_order: nextSortOrder,
-          },
-        ]);
-        if (dbError) throw dbError;
+        const payload = {
+          image_url: publicUrl,
+          title: title.trim(),
+          description: description.trim() || null,
+          sort_order: Number.parseInt(sortOrder, 10) || 0,
+        };
+        const { error: dbError } = await supabase
+          .from("gallery_images")
+          .insert([{ ...payload, is_hero_image: isHeroImage }]);
+        if (dbError) {
+          if (!isMissingHeroColumn(dbError)) throw dbError;
+          if (isHeroImage) {
+            await Promise.all(
+              (images || [])
+                .filter((image) => isLegacyHeroImage(image.image_url))
+                .map((image) =>
+                  supabase
+                    .from("gallery_images")
+                    .update({ image_url: cleanHeroImageUrl(image.image_url) })
+                    .eq("id", image.id),
+                ),
+            );
+          }
+          const { error: retryError } = await supabase.from("gallery_images").insert([
+            {
+              ...payload,
+              image_url: setLegacyHeroImage(payload.image_url, isHeroImage),
+            },
+          ]);
+          if (retryError) throw retryError;
+          toast.success("Image saved and selected for the Hero Section.");
+        }
 
         toast.success("Image added to gallery", { id: toastId });
-      } catch (err: any) {
-        toast.error(`Upload failed: ${err.message || err}`, { id: toastId });
+      } catch (err: unknown) {
+        toast.error(`Upload failed: ${getErrorMessage(err)}`, { id: toastId });
         throw err;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-gallery-images"] });
       queryClient.invalidateQueries({ queryKey: ["gallery-images"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       setIsAddOpen(false);
       setTitle("");
+      setDescription("");
+      setSortOrder("0");
+      setIsHeroImage(false);
       setImageFile(null);
       setImagePreview("");
     },
@@ -213,6 +268,7 @@ export function GalleryManager() {
   const editMutation = useMutation({
     mutationFn: async () => {
       if (!editingImage) return;
+      if (!title.trim()) throw new Error("A title is required.");
 
       const toastId = toast.loading("Saving changes...");
       try {
@@ -220,24 +276,24 @@ export function GalleryManager() {
 
         // If a new file was chosen, upload it and clean up the old one
         if (imageFile) {
-          const compressedBlob = await compressImage(imageFile);
+          const compressedImage = await compressImage(imageFile);
           const uuid = crypto.randomUUID();
-          const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-          const filePath = `${uuid}/${cleanFileName}`;
+          const sourceName = imageFile.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
+          const filePath = `${uuid}/${sourceName || "clinic-photo"}.${compressedImage.extension}`;
 
           // Upload new
           const { error: uploadError } = await supabase.storage
             .from("clinic-gallery")
-            .upload(filePath, compressedBlob, {
-              contentType: imageFile.type,
+            .upload(filePath, compressedImage.blob, {
+              contentType: compressedImage.contentType,
               upsert: true,
             });
           if (uploadError) throw uploadError;
 
           // Get new public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from("clinic-gallery")
-            .getPublicUrl(filePath);
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("clinic-gallery").getPublicUrl(filePath);
 
           updatedImageUrl = publicUrl;
 
@@ -249,28 +305,60 @@ export function GalleryManager() {
         }
 
         // Update database record
+        const payload = {
+          image_url: updatedImageUrl,
+          title: title.trim(),
+          description: description.trim() || null,
+          sort_order: Number.parseInt(sortOrder, 10) || 0,
+        };
         const { error: dbError } = await supabase
           .from("gallery_images")
-          .update({
-            image_url: updatedImageUrl,
-            title: title.trim() || null,
-          })
+          .update({ ...payload, is_hero_image: isHeroImage })
           .eq("id", editingImage.id);
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          if (!isMissingHeroColumn(dbError)) throw dbError;
+          if (isHeroImage) {
+            await Promise.all(
+              (images || [])
+                .filter(
+                  (image) => image.id !== editingImage.id && isLegacyHeroImage(image.image_url),
+                )
+                .map((image) =>
+                  supabase
+                    .from("gallery_images")
+                    .update({ image_url: cleanHeroImageUrl(image.image_url) })
+                    .eq("id", image.id),
+                ),
+            );
+          }
+          const { error: retryError } = await supabase
+            .from("gallery_images")
+            .update({
+              ...payload,
+              image_url: setLegacyHeroImage(payload.image_url, isHeroImage),
+            })
+            .eq("id", editingImage.id);
+          if (retryError) throw retryError;
+          toast.success("Image saved and selected for the Hero Section.");
+        }
 
         toast.success("Gallery item updated successfully", { id: toastId });
-      } catch (err: any) {
-        toast.error(`Failed to update item: ${err.message || err}`, { id: toastId });
+      } catch (err: unknown) {
+        toast.error(`Failed to update item: ${getErrorMessage(err)}`, { id: toastId });
         throw err;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-gallery-images"] });
       queryClient.invalidateQueries({ queryKey: ["gallery-images"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       setIsEditOpen(false);
       setEditingImage(null);
       setTitle("");
+      setDescription("");
+      setSortOrder("0");
+      setIsHeroImage(false);
       setImageFile(null);
       setImagePreview("");
     },
@@ -291,21 +379,19 @@ export function GalleryManager() {
         }
 
         // 2. Delete database record
-        const { error: dbError } = await supabase
-          .from("gallery_images")
-          .delete()
-          .eq("id", item.id);
+        const { error: dbError } = await supabase.from("gallery_images").delete().eq("id", item.id);
         if (dbError) throw dbError;
 
         toast.success("Item deleted from gallery", { id: toastId });
-      } catch (err: any) {
-        toast.error(`Failed to delete: ${err.message || err}`, { id: toastId });
+      } catch (err: unknown) {
+        toast.error(`Failed to delete: ${getErrorMessage(err)}`, { id: toastId });
         throw err;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-gallery-images"] });
       queryClient.invalidateQueries({ queryKey: ["gallery-images"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       setDeleteImage(null);
     },
   });
@@ -336,9 +422,7 @@ export function GalleryManager() {
     if (!images) return;
 
     // Check if the order actually changed
-    const hasOrderChanged = localImages.some(
-      (img, idx) => img.id !== images[idx]?.id
-    );
+    const hasOrderChanged = localImages.some((img, idx) => img.id !== images[idx]?.id);
 
     if (!hasOrderChanged) return;
 
@@ -347,23 +431,26 @@ export function GalleryManager() {
       // Execute batch updates for sort_order values
       await Promise.all(
         localImages.map((img, idx) =>
-          supabase
-            .from("gallery_images")
-            .update({ sort_order: idx })
-            .eq("id", img.id)
-        )
+          supabase.from("gallery_images").update({ sort_order: idx }).eq("id", img.id),
+        ),
       );
 
       queryClient.invalidateQueries({ queryKey: ["admin-gallery-images"] });
       queryClient.invalidateQueries({ queryKey: ["gallery-images"] });
       toast.success("Gallery order saved", { id: toastId });
-    } catch (err: any) {
-      toast.error(`Failed to save order: ${err.message || err}`, { id: toastId });
+    } catch (err: unknown) {
+      toast.error(`Failed to save order: ${getErrorMessage(err)}`, { id: toastId });
     }
   };
 
   function handleOpenAdd() {
     setTitle("");
+    setDescription("");
+    const nextSortOrder = images?.length
+      ? Math.max(...images.map((image) => image.sort_order)) + 1
+      : 0;
+    setSortOrder(String(nextSortOrder));
+    setIsHeroImage(false);
     setImageFile(null);
     setImagePreview("");
     setIsAddOpen(true);
@@ -372,8 +459,11 @@ export function GalleryManager() {
   function handleOpenEdit(item: GalleryImage) {
     setEditingImage(item);
     setTitle(item.title || "");
+    setDescription(item.description || "");
+    setSortOrder(String(item.sort_order));
+    setIsHeroImage(item.is_hero_image || isLegacyHeroImage(item.image_url));
     setImageFile(null);
-    setImagePreview(item.image_url);
+    setImagePreview(cleanHeroImageUrl(item.image_url));
     setIsEditOpen(true);
   }
 
@@ -383,11 +473,16 @@ export function GalleryManager() {
         <div>
           <CardTitle className="text-xl font-bold">Manage Clinic Gallery</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Upload clinic photos, edit captions, and drag items up/down to set the display order.
+            Upload clinic photos, manage titles and descriptions, and set their display order.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="flex items-center gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            className="flex items-center gap-1.5"
+          >
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </Button>
           <Button size="sm" onClick={handleOpenAdd} className="flex items-center gap-1">
@@ -426,36 +521,52 @@ export function GalleryManager() {
                   onDragStart={(e) => handleDragStart(e, idx)}
                   onDragOver={(e) => handleDragOver(e, idx)}
                   onDragEnd={handleDragEnd}
-                  className={`flex items-center justify-between p-3.5 border border-border rounded-xl bg-background transition-all select-none ${
-                    draggedIndex === idx ? "opacity-40 border-primary scale-[0.99]" : "hover:border-primary/20 hover:shadow-sm"
+                  className={`flex flex-col gap-3 p-3.5 border border-border rounded-xl bg-background transition-all select-none sm:flex-row sm:items-center sm:justify-between ${
+                    draggedIndex === idx
+                      ? "opacity-40 border-primary scale-[0.99]"
+                      : "hover:border-primary/20 hover:shadow-sm"
                   }`}
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 w-full items-start gap-3 sm:items-center">
                     <div className="cursor-grab active:cursor-grabbing p-1.5 text-muted-foreground/60 hover:text-foreground transition-colors">
                       <GripVertical className="h-5 w-5" />
                     </div>
-                    <div className="h-16 w-24 shrink-0 rounded-lg overflow-hidden border border-border bg-muted">
+                    <div className="flex h-20 w-24 shrink-0 items-center justify-center rounded-lg overflow-hidden border border-border bg-muted p-1">
                       <img
                         src={img.image_url}
                         alt={img.title || "Gallery Item"}
-                        className="h-full w-full object-cover object-top"
+                        loading="lazy"
+                        className="h-full w-full object-contain"
                       />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-sm leading-tight text-foreground">
-                        {img.title || "Untitled Gallery Item"}
-                      </h4>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="font-semibold text-sm leading-tight text-foreground">
+                          {img.title || "Untitled Gallery Item"}
+                        </h4>
+                        {(img.is_hero_image || isLegacyHeroImage(img.image_url)) && (
+                          <Badge className="gap-1 bg-primary text-primary-foreground">
+                            <Sparkles className="h-3 w-3" aria-hidden="true" />
+                            Hero Image
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                        {img.description || "No description added."}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Uploaded: {new Date(img.created_at).toLocaleDateString()}
+                        Order {img.sort_order} · Uploaded{" "}
+                        {new Date(img.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
                     <Button
                       size="icon"
                       variant="outline"
                       className="h-9 w-9 rounded-lg hover:border-primary/30 hover:text-primary transition-all"
                       onClick={() => handleOpenEdit(img)}
+                      aria-label={`Edit ${img.title || "gallery item"}`}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -464,6 +575,7 @@ export function GalleryManager() {
                       variant="destructive"
                       className="h-9 w-9 rounded-lg"
                       onClick={() => setDeleteImage(img)}
+                      aria-label={`Delete ${img.title || "gallery item"}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -476,11 +588,11 @@ export function GalleryManager() {
 
         {/* DIALOG: ADD IMAGE */}
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogContent className="max-w-md bg-background border border-border max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogContent className="max-w-md bg-background border border-border max-h-[90vh] flex min-h-0 flex-col overflow-hidden p-0">
             <DialogHeader className="p-6 pb-2 shrink-0">
               <DialogTitle className="text-xl font-bold">Add Gallery Image</DialogTitle>
               <DialogDescription>
-                Upload a photo and add a title/caption to show on the homepage.
+                Add the photo details shown on the public gallery card and image viewer.
               </DialogDescription>
             </DialogHeader>
 
@@ -489,21 +601,71 @@ export function GalleryManager() {
                 e.preventDefault();
                 addMutation.mutate();
               }}
-              className="flex flex-col flex-1 overflow-hidden"
+              className="flex min-h-0 flex-col flex-1 overflow-hidden"
             >
-              <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="img-title">Title / Caption (Optional)</Label>
+                  <Label htmlFor="img-title">
+                    Title <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="img-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Modern Consultation Room"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="img-description">Description (Optional)</Label>
+                  <Textarea
+                    id="img-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Equipped with advanced diagnostic tools for accurate cardiac assessment."
+                    rows={4}
+                    maxLength={500}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {description.length}/500
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="img-sort-order">Sort Order</Label>
+                  <Input
+                    id="img-sort-order"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    inputMode="numeric"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
+                  <div>
+                    <Label htmlFor="add-hero-image" className="font-semibold">
+                      Use as Hero Image
+                    </Label>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Selecting this image automatically replaces the current hero image.
+                    </p>
+                  </div>
+                  <Switch
+                    id="add-hero-image"
+                    checked={isHeroImage}
+                    onCheckedChange={setIsHeroImage}
+                    aria-label="Use as Hero Image"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Image File <span className="text-destructive">*</span></Label>
+                  <Label>
+                    Image File <span className="text-destructive">*</span>
+                  </Label>
                   <div
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -533,11 +695,11 @@ export function GalleryManager() {
                       }}
                     />
                     {imagePreview ? (
-                      <div className="relative group w-32 h-32 max-h-[200px] rounded-xl overflow-hidden shadow border border-border">
+                      <div className="relative group flex h-40 w-full items-center justify-center rounded-xl overflow-hidden shadow border border-border bg-muted p-2">
                         <img
                           src={imagePreview}
                           alt="Gallery Preview"
-                          className="w-full h-full object-cover object-top max-h-[200px]"
+                          className="max-h-full max-w-full object-contain"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <span className="text-white text-xs font-semibold">Change Image</span>
@@ -561,7 +723,10 @@ export function GalleryManager() {
                 <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={addMutation.isPending || !imageFile}>
+                <Button
+                  type="submit"
+                  disabled={addMutation.isPending || !imageFile || !title.trim()}
+                >
                   {addMutation.isPending ? "Uploading..." : "Upload Photo"}
                 </Button>
               </DialogFooter>
@@ -571,11 +736,11 @@ export function GalleryManager() {
 
         {/* DIALOG: EDIT / REPLACE IMAGE */}
         <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-md bg-background border border-border max-h-[90vh] flex flex-col overflow-hidden p-0">
+          <DialogContent className="max-w-md bg-background border border-border max-h-[90vh] flex min-h-0 flex-col overflow-hidden p-0">
             <DialogHeader className="p-6 pb-2 shrink-0">
               <DialogTitle className="text-xl font-bold">Edit Gallery Item</DialogTitle>
               <DialogDescription>
-                Modify the photo caption, or upload a new file to replace the image.
+                Modify the gallery details, display order, or replace the current image.
               </DialogDescription>
             </DialogHeader>
 
@@ -584,16 +749,64 @@ export function GalleryManager() {
                 e.preventDefault();
                 editMutation.mutate();
               }}
-              className="flex flex-col flex-1 overflow-hidden"
+              className="flex min-h-0 flex-col flex-1 overflow-hidden"
             >
-              <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="edit-title">Title / Caption (Optional)</Label>
+                  <Label htmlFor="edit-title">
+                    Title <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="edit-title"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="e.g. Modern Consultation Room"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-description">Description (Optional)</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Equipped with advanced diagnostic tools for accurate cardiac assessment."
+                    rows={4}
+                    maxLength={500}
+                  />
+                  <p className="text-right text-xs text-muted-foreground">
+                    {description.length}/500
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-sort-order">Sort Order</Label>
+                  <Input
+                    id="edit-sort-order"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    inputMode="numeric"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
+                  <div>
+                    <Label htmlFor="edit-hero-image" className="font-semibold">
+                      Use as Hero Image
+                    </Label>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Selecting this image automatically replaces the current hero image.
+                    </p>
+                  </div>
+                  <Switch
+                    id="edit-hero-image"
+                    checked={isHeroImage}
+                    onCheckedChange={setIsHeroImage}
+                    aria-label="Use as Hero Image"
                   />
                 </div>
 
@@ -628,11 +841,11 @@ export function GalleryManager() {
                       }}
                     />
                     {imagePreview ? (
-                      <div className="relative group w-32 h-32 max-h-[200px] rounded-xl overflow-hidden shadow border border-border">
+                      <div className="relative group flex h-40 w-full items-center justify-center rounded-xl overflow-hidden shadow border border-border bg-muted p-2">
                         <img
                           src={imagePreview}
                           alt="Gallery Preview"
-                          className="w-full h-full object-cover object-top max-h-[200px]"
+                          className="max-h-full max-w-full object-contain"
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <span className="text-white text-xs font-semibold">Change Image</span>
@@ -656,7 +869,7 @@ export function GalleryManager() {
                 <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={editMutation.isPending}>
+                <Button type="submit" disabled={editMutation.isPending || !title.trim()}>
                   {editMutation.isPending ? "Saving..." : "Save Changes"}
                 </Button>
               </DialogFooter>
@@ -665,10 +878,15 @@ export function GalleryManager() {
         </Dialog>
 
         {/* ALERT: DELETE CONFIRMATION */}
-        <AlertDialog open={deleteImage !== null} onOpenChange={(open) => !open && setDeleteImage(null)}>
+        <AlertDialog
+          open={deleteImage !== null}
+          onOpenChange={(open) => !open && setDeleteImage(null)}
+        >
           <AlertDialogContent className="bg-background border border-border">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-lg font-bold">Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogTitle className="text-lg font-bold">
+                Are you absolutely sure?
+              </AlertDialogTitle>
               <AlertDialogDescription className="text-sm text-muted-foreground">
                 This will permanently delete the gallery photo{" "}
                 <span className="font-semibold text-foreground">

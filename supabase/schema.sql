@@ -11,6 +11,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- --------------------------------------------------
 DROP VIEW IF EXISTS public.public_bookings;
 DROP TABLE IF EXISTS public.doctor_holidays;
+DROP TABLE IF EXISTS public.faqs;
+DROP TABLE IF EXISTS public.testimonials;
+DROP TABLE IF EXISTS public.admin_verified_sessions;
+DROP TABLE IF EXISTS public.admin_phone_challenges;
 DROP TABLE IF EXISTS public.appointments;
 DROP TABLE IF EXISTS public.availability;
 DROP TABLE IF EXISTS public.doctor_services;
@@ -26,6 +30,11 @@ DROP TABLE IF EXISTS public.user_roles;
 CREATE TABLE public.user_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT,
+    admin_phone TEXT CHECK (
+        admin_phone IS NULL
+        OR admin_phone ~ '^\+[1-9][0-9]{7,14}$'
+    ),
     role TEXT NOT NULL CHECK (role IN ('admin', 'doctor', 'staff')) DEFAULT 'admin',
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -40,13 +49,41 @@ CREATE TABLE public.doctors (
     experience TEXT NOT NULL,
     photo TEXT,
     bio TEXT,
+    is_featured_hero BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX doctors_one_featured_hero_idx
+    ON public.doctors (is_featured_hero)
+    WHERE is_featured_hero = true;
+
+CREATE OR REPLACE FUNCTION public.enforce_single_featured_hero_doctor()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.is_featured_hero THEN
+        UPDATE public.doctors
+        SET is_featured_hero = false
+        WHERE id <> NEW.id
+          AND is_featured_hero = true;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER doctors_single_featured_hero
+BEFORE INSERT OR UPDATE OF is_featured_hero ON public.doctors
+FOR EACH ROW
+WHEN (NEW.is_featured_hero = true)
+EXECUTE FUNCTION public.enforce_single_featured_hero_doctor();
 
 ALTER TABLE public.user_roles
     ADD COLUMN doctor_id UUID REFERENCES public.doctors(id) ON DELETE SET NULL;
 
 CREATE INDEX idx_user_roles_role ON public.user_roles(role);
+CREATE INDEX idx_faqs_published_order
+    ON public.faqs (is_published, sort_order, created_at);
 
 -- Table: services
 CREATE TABLE public.services (
@@ -55,6 +92,30 @@ CREATE TABLE public.services (
     description TEXT,
     price TEXT NOT NULL, -- Stored as text to match original mock (e.g. "₹600", "From ₹500")
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.testimonials (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_name TEXT NOT NULL,
+    patient_label TEXT,
+    review TEXT NOT NULL CHECK (char_length(review) <= 700),
+    rating INTEGER NOT NULL DEFAULT 5 CHECK (rating BETWEEN 1 AND 5),
+    image_url TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_published BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.faqs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    question TEXT NOT NULL CHECK (char_length(question) <= 1000),
+    answer TEXT NOT NULL CHECK (char_length(answer) <= 2000),
+    category TEXT CHECK (category IS NULL OR char_length(category) <= 80),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_published BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 -- Table: doctor_services (Join table for Doctors and Services)
@@ -132,6 +193,8 @@ WHERE status != 'cancelled';
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.doctors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.testimonials ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.doctor_services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.availability ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
@@ -142,17 +205,21 @@ ALTER TABLE public.doctor_holidays ENABLE ROW LEVEL SECURITY;
 -- --------------------------------------------------
 
 -- Check if the current authenticated user has the 'admin' role
-CREATE OR REPLACE FUNCTION public.is_admin() 
-RETURNS boolean AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM public.user_roles 
-        WHERE user_id = auth.uid()
-          AND role = 'admin'
-          AND is_active = true
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.user_roles AS roles
+        WHERE roles.user_id = auth.uid()
+          AND roles.role = 'admin'
+          AND roles.is_active = true
     );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Check if the current authenticated user has the requested role
 CREATE OR REPLACE FUNCTION public.has_role(check_role TEXT)
@@ -208,6 +275,66 @@ CREATE POLICY admin_all ON public.services
 -- Public read access
 CREATE POLICY public_select ON public.services 
     FOR SELECT TO anon, authenticated USING (true);
+
+CREATE POLICY admin_all ON public.testimonials
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+CREATE POLICY public_select ON public.testimonials
+    FOR SELECT TO anon, authenticated
+    USING (is_published = true OR public.is_admin());
+
+CREATE POLICY admin_all ON public.faqs
+    FOR ALL TO authenticated
+    USING (public.is_admin())
+    WITH CHECK (public.is_admin());
+CREATE POLICY public_select ON public.faqs
+    FOR SELECT TO anon, authenticated
+    USING (is_published = true OR public.is_admin());
+
+INSERT INTO public.faqs (question, answer, category, sort_order, is_published)
+SELECT
+    'How do I book an appointment?',
+    'You can book online through the appointment page or call the clinic directly. After choosing a service, doctor, date, and available time slot, we will confirm your booking details.',
+    'Appointments',
+    0,
+    true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.faqs WHERE question = 'How do I book an appointment?'
+);
+
+INSERT INTO public.faqs (question, answer, category, sort_order, is_published)
+SELECT
+    'What should I bring for my first visit?',
+    'Please bring previous prescriptions, investigation reports, current medications, and any discharge summaries if available. This helps the doctor understand your health history clearly.',
+    'Visit preparation',
+    1,
+    true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.faqs WHERE question = 'What should I bring for my first visit?'
+);
+
+INSERT INTO public.faqs (question, answer, category, sort_order, is_published)
+SELECT
+    'Are service prices transparent?',
+    'Yes. Service prices are shown before booking wherever available. If a service needs additional tests or procedures, the care team will explain those costs before proceeding.',
+    'Billing',
+    2,
+    true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.faqs WHERE question = 'Are service prices transparent?'
+);
+
+INSERT INTO public.faqs (question, answer, category, sort_order, is_published)
+SELECT
+    'Is follow-up support included?',
+    'Most consultations include a clear follow-up plan. The doctor will explain when you should return, whether further tests are needed, and how to continue your treatment safely.',
+    'After care',
+    3,
+    true
+WHERE NOT EXISTS (
+    SELECT 1 FROM public.faqs WHERE question = 'Is follow-up support included?'
+);
 
 -- -- doctor_services --
 -- Admins have full access

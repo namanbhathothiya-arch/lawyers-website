@@ -2,13 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Calendar, Clock, LogOut, Menu, Search, Stethoscope } from "lucide-react";
 import { StaffGuard } from "@/components/StaffGuard";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/hooks/use-auth";
 import { AppointmentsManager } from "@/components/admin/AppointmentsManager";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/staff")({
   head: () => ({
-    meta: [{ title: "Staff Portal — Advanced Care Medical Clinic" }],
+    meta: [{ title: "Staff Portal — HeartCare Advanced Clinic" }],
   }),
   component: () => (
     <StaffGuard>
@@ -48,7 +48,7 @@ function StaffPortal() {
         className={cn(
           "w-64 border-r border-border bg-background flex flex-col transition-transform duration-300 ease-in-out z-50",
           "fixed inset-y-0 left-0 md:sticky md:top-0 md:h-screen md:translate-x-0",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
         <div className="h-16 px-6 border-b border-border flex items-center gap-2">

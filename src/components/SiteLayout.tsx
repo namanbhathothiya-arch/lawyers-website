@@ -1,6 +1,22 @@
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
-import { Menu, X, Phone, Stethoscope } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  Facebook,
+  HeartPulse,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  ShieldCheck,
+  Stethoscope,
+  Twitter,
+  X,
+  Youtube,
+} from "lucide-react";
 import { CLINIC } from "@/lib/clinic-data";
 import { Button } from "@/components/ui/button";
 
@@ -12,9 +28,27 @@ const nav = [
   { to: "/contact", label: "Contact" },
 ] as const;
 
+const patientLinks = [
+  { to: "/appointment", label: "Book Appointment" },
+  { to: "/services", label: "Our Services" },
+  { to: "/doctors", label: "Find a Doctor" },
+  { to: "/gallery", label: "Clinic Gallery" },
+  { to: "/contact", label: "Get Directions" },
+] as const;
+
+const contactNumber = CLINIC.phone.replace(/[^\d+]/g, "");
+const emergencyNumber = CLINIC.emergencyPhone.replace(/[^\d+]/g, "");
+
 export function SiteLayout() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const socialLinks = [
+    { label: "Facebook", href: CLINIC.socials.facebook, icon: Facebook },
+    { label: "Instagram", href: CLINIC.socials.instagram, icon: Instagram },
+    { label: "LinkedIn", href: CLINIC.socials.linkedin, icon: Linkedin },
+    { label: "YouTube", href: CLINIC.socials.youtube, icon: Youtube },
+    { label: "X", href: CLINIC.socials.x, icon: Twitter },
+  ].filter((link) => Boolean(link.href));
 
   const isPortal =
     (location.pathname.startsWith("/admin") || location.pathname.startsWith("/staff")) &&
@@ -43,7 +77,7 @@ export function SiteLayout() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1">
             {nav.map((n) => (
               <Link
                 key={n.to}
@@ -60,7 +94,7 @@ export function SiteLayout() {
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <a
               href={`tel:${CLINIC.phone}`}
               className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1.5"
@@ -75,7 +109,7 @@ export function SiteLayout() {
           <button
             type="button"
             aria-label="Toggle menu"
-            className="md:hidden w-11 h-11 flex items-center justify-center rounded-md hover:bg-muted"
+            className="lg:hidden w-11 h-11 flex items-center justify-center rounded-md hover:bg-muted"
             onClick={() => setOpen((v) => !v)}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -83,7 +117,7 @@ export function SiteLayout() {
         </div>
 
         {open && (
-          <div className="md:hidden border-t border-border bg-background">
+          <div className="lg:hidden border-t border-border bg-background">
             <div className="px-4 py-3 space-y-1">
               {nav.map((n) => (
                 <Link
@@ -110,53 +144,195 @@ export function SiteLayout() {
         <Outlet />
       </main>
 
-      <footer className="mt-20 border-t border-border bg-secondary/40">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 grid gap-8 md:grid-cols-3">
-          <div>
-            <div className="flex items-center gap-2.5 mb-3">
-              <span className="h-9 w-9 rounded-xl bg-primary text-primary-foreground grid place-items-center">
-                <Stethoscope className="h-5 w-5" />
+      <footer className="relative mt-20 overflow-hidden border-t border-primary/10 bg-[#071d33] text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,113,227,0.25),transparent_32rem),radial-gradient(circle_at_bottom_right,rgba(46,196,182,0.18),transparent_28rem)]" />
+        <div className="absolute left-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+
+        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/10 backdrop-blur sm:p-7 lg:flex lg:items-center lg:justify-between lg:gap-8">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-primary-light">
+                <HeartPulse className="h-3.5 w-3.5" />
+                Premium healthcare support
               </span>
-              <span className="font-display font-bold">{CLINIC.name}</span>
+              <h2 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                Need help choosing the right care?
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-white/70 sm:text-base">
+                Our team can guide you to the right doctor, service, or appointment slot with clear,
+                compassionate support.
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground max-w-sm">{CLINIC.tagline}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-0 lg:min-w-[22rem]">
+              <a
+                href={`tel:${contactNumber}`}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition hover:-translate-y-0.5 hover:bg-primary/90"
+              >
+                <Phone className="h-4 w-4" />
+                Call clinic
+              </a>
+              <Link
+                to="/appointment"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/15"
+              >
+                Book visit
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold mb-3 text-sm">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              {nav.map((n) => (
-                <li key={n.to}>
-                  <Link to={n.to} className="hover:text-foreground">
-                    {n.label}
-                  </Link>
+
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_0.9fr_1.15fr]">
+            <div className="min-w-0">
+              <Link to="/" className="inline-flex max-w-full items-center gap-3">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white text-primary shadow-lg shadow-primary/20">
+                  <Stethoscope className="h-6 w-6" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block break-words font-display text-lg font-bold leading-tight">
+                    {CLINIC.name}
+                  </span>
+                  <span className="mt-1 block text-xs font-medium uppercase tracking-[0.22em] text-primary-light">
+                    {CLINIC.specialization}
+                  </span>
+                </span>
+              </Link>
+              <p className="mt-5 max-w-sm text-sm leading-6 text-white/70">{CLINIC.tagline}</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80">
+                  <ShieldCheck className="h-3.5 w-3.5 text-primary-light" />
+                  Trusted care
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80">
+                  <HeartPulse className="h-3.5 w-3.5 text-primary-light" />
+                  Patient-first clinic
+                </span>
+              </div>
+
+              {socialLinks.length > 0 && (
+                <div className="mt-6">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/50">
+                    Follow us
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {socialLinks.map((social) => {
+                      const Icon = social.icon;
+
+                      return (
+                        <a
+                          key={social.label}
+                          href={social.href}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Follow ${CLINIC.name} on ${social.label}`}
+                          className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/10 text-white/80 transition hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <Icon className="h-4 w-4" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-white">
+                Quick links
+              </h4>
+              <ul className="mt-4 space-y-3 text-sm text-white/68">
+                {nav.map((n) => (
+                  <li key={n.to}>
+                    <Link
+                      to={n.to}
+                      className="group inline-flex items-center gap-2 transition hover:text-white"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5 text-primary-light opacity-70 transition group-hover:translate-x-1 group-hover:opacity-100" />
+                      {n.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-white">
+                Patient links
+              </h4>
+              <ul className="mt-4 space-y-3 text-sm text-white/68">
+                {patientLinks.map((n) => (
+                  <li key={n.to}>
+                    <Link
+                      to={n.to}
+                      className="group inline-flex items-center gap-2 transition hover:text-white"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5 text-primary-light opacity-70 transition group-hover:translate-x-1 group-hover:opacity-100" />
+                      {n.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-[0.2em] text-white">
+                Contact details
+              </h4>
+              <ul className="mt-4 space-y-4 text-sm text-white/70">
+                <li className="flex gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary-light" />
+                  <span className="min-w-0 break-words">{CLINIC.address}</span>
                 </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-3 text-sm">Contact</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>{CLINIC.address}</li>
-              <li>
-                <a href={`tel:${CLINIC.phone}`} className="hover:text-foreground">
-                  {CLINIC.phone}
-                </a>
-              </li>
-              <li>
-                <a href={`mailto:${CLINIC.email}`} className="hover:text-foreground">
-                  {CLINIC.email}
-                </a>
-              </li>
-            </ul>
+                <li className="flex gap-3">
+                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-primary-light" />
+                  <span className="min-w-0 space-y-1">
+                    <a
+                      href={`tel:${contactNumber}`}
+                      className="block break-words transition hover:text-white"
+                    >
+                      {CLINIC.phone}
+                    </a>
+                    <a
+                      href={`tel:${emergencyNumber}`}
+                      className="block break-words font-semibold text-red-200 transition hover:text-white"
+                    >
+                      Emergency: {CLINIC.emergencyPhone}
+                    </a>
+                  </span>
+                </li>
+                <li className="flex gap-3">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary-light" />
+                  <a
+                    href={`mailto:${CLINIC.email}`}
+                    className="min-w-0 break-all transition hover:text-white"
+                  >
+                    {CLINIC.email}
+                  </a>
+                </li>
+                <li className="flex gap-3">
+                  <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary-light" />
+                  <span className="min-w-0 break-words">
+                    {CLINIC.workingDays}
+                    <br />
+                    {CLINIC.workingHours}
+                  </span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-        <div className="border-t border-border py-4 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>
-            © {new Date().getFullYear()} {CLINIC.name}. All rights reserved.
-          </span>
-          <Link to="/admin" className="hover:text-foreground underline">
-            Admin Portal
-          </Link>
+
+        <div className="relative border-t border-white/10">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <span>
+              © {new Date().getFullYear()} {CLINIC.name}. All rights reserved.
+            </span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span>Designed for compassionate healthcare experiences.</span>
+              <Link to="/admin" className="transition hover:text-white">
+                Admin Portal
+              </Link>
+            </div>
+          </div>
         </div>
       </footer>
 

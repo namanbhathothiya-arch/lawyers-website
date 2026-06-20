@@ -73,26 +73,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Advanced Care Medical Clinic" },
+      { title: "HeartCare Advanced Clinic" },
       {
         name: "description",
         content:
-          "Premium multi-doctor clinic offering compassionate, expert care across general medicine, cardiology, dermatology and orthopedics.",
+          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
       },
-      { property: "og:title", content: "Advanced Care Medical Clinic" },
+      { property: "og:title", content: "HeartCare Advanced Clinic" },
       {
         property: "og:description",
         content:
-          "Premium multi-doctor clinic offering compassionate, expert care across general medicine, cardiology, dermatology and orthopedics.",
+          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://advancedcareclinic.com/og-image.jpg" },
+      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Advanced Care Medical Clinic" },
+      { name: "twitter:title", content: "HeartCare Advanced Clinic" },
       {
         name: "twitter:description",
         content:
-          "Premium multi-doctor clinic offering compassionate, expert care across general medicine, cardiology, dermatology and orthopedics.",
+          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
       },
     ],
     links: [
@@ -102,7 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap",
       },
     ],
   }),

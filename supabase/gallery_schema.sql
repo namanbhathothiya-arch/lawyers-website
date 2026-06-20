@@ -8,9 +8,37 @@ CREATE TABLE IF NOT EXISTS public.gallery_images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     image_url TEXT NOT NULL,
     title TEXT,
+    description TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
+    is_hero_image BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS gallery_images_one_hero_idx
+    ON public.gallery_images (is_hero_image)
+    WHERE is_hero_image = true;
+
+CREATE OR REPLACE FUNCTION public.enforce_single_hero_gallery_image()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.is_hero_image THEN
+        UPDATE public.gallery_images
+        SET is_hero_image = false
+        WHERE id <> NEW.id
+          AND is_hero_image = true;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS gallery_images_single_hero ON public.gallery_images;
+CREATE TRIGGER gallery_images_single_hero
+BEFORE INSERT OR UPDATE OF is_hero_image ON public.gallery_images
+FOR EACH ROW
+WHEN (NEW.is_hero_image = true)
+EXECUTE FUNCTION public.enforce_single_hero_gallery_image();
 
 -- --------------------------------------------------
 -- 2. Configure Row-Level Security (RLS) on gallery_images

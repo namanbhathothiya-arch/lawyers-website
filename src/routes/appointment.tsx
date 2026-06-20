@@ -67,28 +67,28 @@ export const Route = createFileRoute("/appointment")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Book an Appointment — Advanced Care Medical Clinic" },
+      { title: "Book an Appointment — HeartCare Advanced Clinic" },
       {
         name: "description",
-        content: "Book your appointment online with a specialist at Advanced Care Medical Clinic.",
+        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
       },
-      { property: "og:title", content: "Book an Appointment — Advanced Care Medical Clinic" },
+      { property: "og:title", content: "Book an Appointment — HeartCare Advanced Clinic" },
       {
         property: "og:description",
-        content: "Book your appointment online with a specialist at Advanced Care Medical Clinic.",
+        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://advancedcareclinic.com/appointment" },
-      { property: "og:image", content: "https://advancedcareclinic.com/og-image.jpg" },
+      { property: "og:url", content: "https://heartcareclinic.com/appointment" },
+      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Book an Appointment — Advanced Care Medical Clinic" },
+      { name: "twitter:title", content: "Book an Appointment — HeartCare Advanced Clinic" },
       {
         name: "twitter:description",
-        content: "Book your appointment online with a specialist at Advanced Care Medical Clinic.",
+        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
       },
-      { name: "twitter:image", content: "https://advancedcareclinic.com/og-image.jpg" },
+      { name: "twitter:image", content: "https://heartcareclinic.com/og-image.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://advancedcareclinic.com/appointment" }],
+    links: [{ rel: "canonical", href: "https://heartcareclinic.com/appointment" }],
   }),
   component: AppointmentPage,
 });
@@ -222,7 +222,7 @@ function AppointmentPage() {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
         amount: amount,
         currency: currency || "INR",
-        name: "Advanced Care Clinic",
+        name: "HeartCare Advanced Clinic",
         description: `Booking: ${serviceName} with ${doctorName}`,
         order_id: order_id,
         theme: {

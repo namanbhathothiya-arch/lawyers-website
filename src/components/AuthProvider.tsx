@@ -1,17 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
+import { useCallback, useEffect, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { AuthRoleRow } from "@/lib/auth-role";
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  role: string | null;
-  loading: boolean;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext } from "@/components/auth-context";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -19,40 +10,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // 1. Get initial session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        await fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // 2. Listen for auth state changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      setSession(newSession);
-      setUser(newSession?.user ?? null);
-
-      if (newSession?.user) {
-        await fetchUserRole(newSession.user.id);
-      } else {
-        setRole(null);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function fetchUserRole(userId: string) {
+  const fetchUserRole = useCallback(async (userId: string) => {
     try {
       const roleResponse = await supabase
         .from("user_roles")
@@ -63,17 +21,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const error = roleResponse.error;
 
       if (error || !data) {
-        setRole(null);
+        return null;
       } else {
-        setRole(data?.role ?? null);
+        return data?.role ?? null;
       }
     } catch (err) {
       console.error("Error fetching user role:", err);
-      setRole(null);
-    } finally {
-      setLoading(false);
+      return null;
     }
-  }
+  }, []);
+
+  const applySessionState = useCallback(
+    async (nextSession: Session | null) => {
+      setLoading(true);
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+
+      const resolvedRole = await fetchUserRole(nextSession.user.id);
+
+      setRole(resolvedRole);
+
+      setLoading(false);
+    },
+    [fetchUserRole],
+  );
+
+  const refreshAuthState = useCallback(async () => {
+    const {
+      data: { session: refreshedSession },
+    } = await supabase.auth.getSession();
+    await applySessionState(refreshedSession);
+  }, [applySessionState]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      await applySessionState(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      await applySessionState(newSession);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [applySessionState]);
 
   async function signOut() {
     setLoading(true);
@@ -85,16 +85,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        role,
+        loading,
+        signOut,
+        refreshAuthState,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
 }

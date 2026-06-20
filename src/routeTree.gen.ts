@@ -11,17 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ServicesRouteImport } from './routes/services'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppointmentRouteImport } from './routes/appointment'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminTestimonialsRouteImport } from './routes/admin/testimonials'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminHolidaysRouteImport } from './routes/admin/holidays'
 import { Route as AdminGalleryRouteImport } from './routes/admin/gallery'
+import { Route as AdminFaqsRouteImport } from './routes/admin/faqs'
 import { Route as AdminDoctorsRouteImport } from './routes/admin/doctors'
 import { Route as AdminAvailabilityRouteImport } from './routes/admin/availability'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin/appointments'
@@ -34,6 +37,11 @@ const StaffRoute = StaffRouteImport.update({
 const ServicesRoute = ServicesRouteImport.update({
   id: '/services',
   path: '/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DoctorsRoute = DoctorsRouteImport.update({
@@ -66,6 +74,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
+  id: '/admin/testimonials',
+  path: '/admin/testimonials',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/admin/staff',
   path: '/admin/staff',
@@ -91,6 +104,11 @@ const AdminGalleryRoute = AdminGalleryRouteImport.update({
   path: '/admin/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminFaqsRoute = AdminFaqsRouteImport.update({
+  id: '/admin/faqs',
+  path: '/admin/faqs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminDoctorsRoute = AdminDoctorsRouteImport.update({
   id: '/admin/doctors',
   path: '/admin/doctors',
@@ -113,16 +131,19 @@ export interface FileRoutesByFullPath {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRoute
+  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRoute
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -131,16 +152,19 @@ export interface FileRoutesByTo {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRoute
+  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRoute
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -150,16 +174,19 @@ export interface FileRoutesById {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRoute
+  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRoute
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
+  '/admin/faqs': typeof AdminFaqsRoute
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -170,16 +197,19 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
+    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/faqs'
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
     | '/admin/staff'
+    | '/admin/testimonials'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -188,16 +218,19 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
+    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/faqs'
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
     | '/admin/staff'
+    | '/admin/testimonials'
     | '/admin'
   id:
     | '__root__'
@@ -206,16 +239,19 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
+    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/appointments'
     | '/admin/availability'
     | '/admin/doctors'
+    | '/admin/faqs'
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/services'
     | '/admin/staff'
+    | '/admin/testimonials'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -225,16 +261,19 @@ export interface RootRouteChildren {
   AppointmentRoute: typeof AppointmentRoute
   ContactRoute: typeof ContactRoute
   DoctorsRoute: typeof DoctorsRoute
+  GalleryRoute: typeof GalleryRoute
   ServicesRoute: typeof ServicesRoute
   StaffRoute: typeof StaffRoute
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminAvailabilityRoute: typeof AdminAvailabilityRoute
   AdminDoctorsRoute: typeof AdminDoctorsRoute
+  AdminFaqsRoute: typeof AdminFaqsRoute
   AdminGalleryRoute: typeof AdminGalleryRoute
   AdminHolidaysRoute: typeof AdminHolidaysRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminStaffRoute: typeof AdminStaffRoute
+  AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -252,6 +291,13 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services'
       preLoaderRoute: typeof ServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/doctors': {
@@ -296,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/testimonials': {
+      id: '/admin/testimonials'
+      path: '/admin/testimonials'
+      fullPath: '/admin/testimonials'
+      preLoaderRoute: typeof AdminTestimonialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/staff': {
       id: '/admin/staff'
       path: '/admin/staff'
@@ -331,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/faqs': {
+      id: '/admin/faqs'
+      path: '/admin/faqs'
+      fullPath: '/admin/faqs'
+      preLoaderRoute: typeof AdminFaqsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/doctors': {
       id: '/admin/doctors'
       path: '/admin/doctors'
@@ -361,16 +421,19 @@ const rootRouteChildren: RootRouteChildren = {
   AppointmentRoute: AppointmentRoute,
   ContactRoute: ContactRoute,
   DoctorsRoute: DoctorsRoute,
+  GalleryRoute: GalleryRoute,
   ServicesRoute: ServicesRoute,
   StaffRoute: StaffRoute,
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminAvailabilityRoute: AdminAvailabilityRoute,
   AdminDoctorsRoute: AdminDoctorsRoute,
+  AdminFaqsRoute: AdminFaqsRoute,
   AdminGalleryRoute: AdminGalleryRoute,
   AdminHolidaysRoute: AdminHolidaysRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminStaffRoute: AdminStaffRoute,
+  AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport

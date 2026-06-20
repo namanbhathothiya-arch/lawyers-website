@@ -5,7 +5,7 @@ import { AvailabilityManager } from "@/components/admin/AvailabilityManager";
 
 export const Route = createFileRoute("/admin/availability")({
   head: () => ({
-    meta: [{ title: "Availability — Advanced Care Medical Clinic" }],
+    meta: [{ title: "Availability — HeartCare Advanced Clinic" }],
   }),
   component: () => (
     <AdminGuard>

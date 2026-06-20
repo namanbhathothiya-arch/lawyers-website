@@ -33,6 +33,7 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-editorial: "DM Serif Display", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -78,5 +79,130 @@
   h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+  }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@layer utilities {
+  .testimonial-section {
+    background: linear-gradient(
+      135deg,
+      oklch(0.985 0.012 230) 0%,
+      var(--color-background) 52%,
+      oklch(0.965 0.035 205) 100%
+    );
+  }
+
+  .testimonial-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-primary) 4%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-primary) 4%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to bottom, black, transparent 90%);
+  }
+
+  .private-hero {
+    background: linear-gradient(
+      120deg,
+      oklch(0.985 0.012 230) 0%,
+      var(--color-background) 48%,
+      oklch(0.965 0.035 205) 100%
+    );
+  }
+
+  .private-hero-grid {
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklab, var(--color-primary) 5%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-primary) 5%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, black, transparent 82%);
+  }
+
+  .hero-display {
+    font-family: var(--font-editorial);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+  }
+
+  .hero-enter {
+    animation: hero-fade-up 620ms ease-out both;
+  }
+
+  .hero-enter-delay {
+    animation-delay: var(--hero-delay, 160ms);
+  }
+
+  .hero-enter-late {
+    animation-delay: 220ms;
+  }
+
+  .hero-doctor-card {
+    animation: hero-fade-up 700ms 360ms ease-out both;
+  }
+
+  .hero-stat {
+    animation: hero-fade-up 560ms var(--hero-delay, 320ms) ease-out both;
+  }
+
+  .hero-stat:nth-child(even) {
+    border-left-width: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-enter,
+  .hero-enter-delay,
+  .hero-enter-late,
+  .hero-doctor-card,
+  .hero-stat {
+    animation: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-doctor-card {
+    animation:
+      hero-fade-up 700ms 360ms ease-out both,
+      hero-card-float 5s 1.2s ease-in-out infinite;
+  }
+
+  .hero-stat + .hero-stat {
+    border-left-width: 1px;
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "@/hooks/use-auth";
 import { canAccessStaffPortal, getUnauthorizedStaffRedirect } from "@/lib/role-routing";
 
 export function StaffGuard({
@@ -34,7 +34,12 @@ export function StaffGuard({
     );
   }
 
-  if (!user || !role || !allowedRoles.includes(role) || !canAccessStaffPortal(role)) {
+  if (
+    !user ||
+    !role ||
+    !allowedRoles.includes(role) ||
+    !canAccessStaffPortal(role)
+  ) {
     return null;
   }
 

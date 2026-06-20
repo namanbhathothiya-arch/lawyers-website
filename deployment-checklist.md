@@ -1,6 +1,6 @@
-# Deployment Checklist: Production Release
+# Deployment Checklist: HeartCare Advanced Clinic
 
-Follow these steps to deploy the Advanced Care Medical Clinic application to production.
+Follow these steps to deploy the HeartCare Advanced Clinic application to production.
 
 ---
 
@@ -9,8 +9,9 @@ Follow these steps to deploy the Advanced Care Medical Clinic application to pro
 1. **Create Supabase Project**:
    - Register or sign in at [supabase.com](https://supabase.com) and create a new project.
 2. **Execute Database Schema**:
-   - Copy the contents of [`supabase/schema.sql`](file:///c:/Users/komll/OneDrive/Desktop/testing%20website%201/advanced-care-hub-main/advanced-care-hub-main/supabase/schema.sql) and execute it in the **SQL Editor** of your Supabase dashboard.
-   - This creates the tables (`doctors`, `services`, `doctor_services`, `availability`, `appointments`, `doctor_holidays`, `user_roles`), the `public_bookings` privacy view, and enables Row Level Security (RLS) with appropriate select/insert policies.
+   - Copy the contents of `supabase/production_delivery_schema.sql` and execute it in the **SQL Editor** of your Supabase dashboard.
+   - This creates all application tables, including `gallery_images`, the `public_bookings` privacy view, both storage buckets, and all required Row Level Security policies.
+   - Do not use `supabase db reset` for a fresh project until a baseline migration is added. The current migrations only alter an already-created schema.
 3. **Provision Database Seed Data**:
    - Insert services and doctors through the Admin dashboard or write SQL inserts directly to populate the practitioners lists.
 4. **Provision Admin User**:
@@ -42,6 +43,7 @@ Set the following only as Supabase Edge Function secrets:
 | Secret                          | Description                                            |
 | :------------------------------ | :----------------------------------------------------- |
 | **`SUPABASE_URL`**              | Supabase project API endpoint                          |
+| **`SUPABASE_ANON_KEY`**         | Anonymous key used to validate the calling admin JWT   |
 | **`SUPABASE_SERVICE_ROLE_KEY`** | Service role key used only inside Edge Functions       |
 | **`RAZORPAY_KEY_ID`**           | Razorpay key ID for server API calls                   |
 | **`RAZORPAY_KEY_SECRET`**       | Razorpay key secret for order/payment/refund API calls |
@@ -70,6 +72,7 @@ Set the following only as Supabase Edge Function secrets:
    ```bash
    supabase secrets set \
      SUPABASE_URL=https://your-proj.supabase.co \
+     SUPABASE_ANON_KEY=your-anon-key \
      SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
      RAZORPAY_KEY_ID=rzp_live_xxxxxx \
      RAZORPAY_KEY_SECRET=your-razorpay-secret
@@ -78,8 +81,9 @@ Set the following only as Supabase Edge Function secrets:
    ```bash
    supabase functions deploy create-razorpay-order
    supabase functions deploy verify-razorpay-payment
+   supabase functions deploy manage-staff
    ```
-4. Confirm both functions are visible in the Supabase dashboard and have access to the configured secrets.
+4. Confirm all three functions are visible in the Supabase dashboard and have access to the configured secrets.
 
 ---
 

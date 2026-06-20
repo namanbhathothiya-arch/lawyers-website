@@ -5,7 +5,7 @@ import { GalleryManager } from "@/components/admin/GalleryManager";
 
 export const Route = createFileRoute("/admin/gallery")({
   head: () => ({
-    meta: [{ title: "Clinic Gallery — Advanced Care Medical Clinic" }],
+    meta: [{ title: "Clinic Gallery — HeartCare Advanced Clinic" }],
   }),
   component: () => (
     <AdminGuard>
