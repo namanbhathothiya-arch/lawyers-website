@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, CheckCircle2, RefreshCw } from "lucide-react";
+import { CalendarIcon, CheckCircle2, RefreshCw, Scale, ShieldCheck } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,24 +17,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn, generateSlotsFromAvailability } from "@/lib/utils";
-import { TIME_SLOTS } from "@/lib/clinic-data";
+import { LAW_FIRM, TIME_SLOTS } from "@/lib/clinic-data";
 import {
-  useDoctorAvailability,
-  useDoctorBookings,
-  useDoctorHoliday,
-  useDoctorIdsForService,
-  useDoctors,
-  useServices,
+  useLawyerAvailability,
+  useLawyerBookings,
+  useLawyerUnavailability,
+  useLawyerIdsForService,
+  useLawyers,
+  useLegalServices,
 } from "@/hooks/use-supabase-data";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  canBookDoctorForService,
-  getDoctorsForService,
+  canBookLawyerForService,
+  getLawyersForService,
   isValidIndianPhone,
   normalizeIndianPhone,
-  resetDoctorSelectionForServiceChange,
+  resetLawyerSelectionForServiceChange,
 } from "@/lib/booking-utils";
 
 type RazorpaySuccessResponse = {
@@ -59,6 +59,7 @@ type RazorpayWindow = Window & {
 };
 
 const searchSchema = z.object({
+  lawyer: z.string().optional(),
   doctor: z.string().optional(),
   service: z.string().optional(),
 });
@@ -67,28 +68,19 @@ export const Route = createFileRoute("/appointment")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Book an Appointment — HeartCare Advanced Clinic" },
+      { title: `Book a Consultation — ${LAW_FIRM.name}` },
       {
         name: "description",
-        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
+        content: `Book your legal consultation online with advocates at ${LAW_FIRM.name}.`,
       },
-      { property: "og:title", content: "Book an Appointment — HeartCare Advanced Clinic" },
+      { property: "og:title", content: `Book a Consultation — ${LAW_FIRM.name}` },
       {
         property: "og:description",
-        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
+        content: `Book your legal consultation online with advocates at ${LAW_FIRM.name}.`,
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://heartcareclinic.com/appointment" },
-      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Book an Appointment — HeartCare Advanced Clinic" },
-      {
-        name: "twitter:description",
-        content: "Book your cardiac appointment online with Dr. Raj Sharma at HeartCare Advanced Clinic.",
-      },
-      { name: "twitter:image", content: "https://heartcareclinic.com/og-image.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://heartcareclinic.com/appointment" }],
+    links: [{ rel: "canonical", href: "https://sharmalaw.in/appointment" }],
   }),
   component: AppointmentPage,
 });
@@ -96,10 +88,10 @@ export const Route = createFileRoute("/appointment")({
 function AppointmentPage() {
   const search = Route.useSearch();
   const queryClient = useQueryClient();
-  const { data: doctors, isLoading: loadingDoctors, isError: errorDoctors } = useDoctors();
-  const { data: services, isLoading: loadingServices, isError: errorServices } = useServices();
+  const { data: lawyers, isLoading: loadingLawyers, isError: errorLawyers } = useLawyers();
+  const { data: services, isLoading: loadingServices, isError: errorServices } = useLegalServices();
 
-  const [doctor, setDoctor] = useState<string>(search.doctor ?? "");
+  const [lawyer, setLawyer] = useState<string>(search.lawyer || search.doctor || "");
   const [service, setService] = useState<string>(search.service ?? "");
   const [date, setDate] = useState<Date | undefined>();
   const [slot, setSlot] = useState<string>("");
@@ -112,34 +104,34 @@ function AppointmentPage() {
   const dateStr = useMemo(() => (date ? format(date, "yyyy-MM-dd") : ""), [date]);
   const dayOfWeek = useMemo(() => (date ? date.getDay() : undefined), [date]);
 
-  const { data: isHoliday, isLoading: loadingHoliday } = useDoctorHoliday(doctor, dateStr);
-  const { data: bookedSlots, isLoading: loadingBookings } = useDoctorBookings(doctor, dateStr);
-  const { data: availability, isLoading: loadingAvailability } = useDoctorAvailability(
-    doctor,
+  const { data: isHoliday, isLoading: loadingHoliday } = useLawyerUnavailability(lawyer, dateStr);
+  const { data: bookedSlots, isLoading: loadingBookings } = useLawyerBookings(lawyer, dateStr);
+  const { data: availability, isLoading: loadingAvailability } = useLawyerAvailability(
+    lawyer,
     dayOfWeek,
   );
-  const { data: serviceDoctorIds, isLoading: loadingServiceDoctors } =
-    useDoctorIdsForService(service);
+  const { data: serviceLawyerIds, isLoading: loadingServiceLawyers } =
+    useLawyerIdsForService(service);
 
-  const filteredDoctors = useMemo(() => {
+  const filteredLawyers = useMemo(() => {
     if (!service) {
       return [];
     }
-    return getDoctorsForService(doctors || [], serviceDoctorIds);
-  }, [doctors, service, serviceDoctorIds]);
+    return getLawyersForService(lawyers || [], serviceLawyerIds);
+  }, [lawyers, service, serviceLawyerIds]);
 
-  const hasDoctorMappings = !!service && !!serviceDoctorIds && serviceDoctorIds.length > 0;
-  const selectedDoctorIsAllowed = canBookDoctorForService(doctor, service, serviceDoctorIds);
+  const hasLawyerMappings = !!service && !!serviceLawyerIds && serviceLawyerIds.length > 0;
+  const selectedLawyerIsAllowed = canBookLawyerForService(lawyer, service, serviceLawyerIds);
 
   useEffect(() => {
-    if (doctor && filteredDoctors.length > 0 && !filteredDoctors.some((doc) => doc.id === doctor)) {
-      setDoctor("");
+    if (lawyer && filteredLawyers.length > 0 && !filteredLawyers.some((doc) => doc.id === lawyer)) {
+      setLawyer("");
       setSlot("");
     }
-  }, [doctor, filteredDoctors]);
+  }, [lawyer, filteredLawyers]);
 
   const slots = useMemo(() => {
-    if (!doctor || !date) return [];
+    if (!lawyer || !date) return [];
     if (availability && availability.length > 0) {
       const generated = availability.flatMap((avail) =>
         generateSlotsFromAvailability(
@@ -151,10 +143,10 @@ function AppointmentPage() {
       return Array.from(new Set(generated));
     }
     return TIME_SLOTS;
-  }, [doctor, date, availability]);
+  }, [lawyer, date, availability]);
 
   const valid =
-    doctor &&
+    lawyer &&
     service &&
     date &&
     slot &&
@@ -162,8 +154,8 @@ function AppointmentPage() {
     phone &&
     email &&
     isValidIndianPhone(phone) &&
-    selectedDoctorIsAllowed &&
-    !loadingServiceDoctors &&
+    selectedLawyerIsAllowed &&
+    !loadingServiceLawyers &&
     !isHoliday &&
     !loading;
 
@@ -174,17 +166,16 @@ function AppointmentPage() {
         toast.error("Please enter a valid Indian mobile number.");
         return;
       }
-      if (doctor && service && !selectedDoctorIsAllowed) {
-        toast.error("Please choose a doctor who provides the selected service.");
+      if (lawyer && service && !selectedLawyerIsAllowed) {
+        toast.error("Please choose an advocate who provides the selected service.");
         return;
       }
-      toast.error("Please complete all fields");
+      toast.error("Please complete all required fields");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Load Razorpay Checkout SDK
       const loaded = await loadScript("https://checkout.razorpay.com/v1/checkout.js");
       if (!loaded) {
         toast.error("Razorpay payment gateway failed to initialize. Are you online?");
@@ -192,18 +183,17 @@ function AppointmentPage() {
         return;
       }
 
-      const selectedDoctor = doctors?.find((d) => d.id === doctor);
+      const selectedLawyer = lawyers?.find((d) => d.id === lawyer);
       const selectedService = services?.find((s) => s.id === service);
-      const doctorName = selectedDoctor ? selectedDoctor.name : "Doctor";
-      const serviceName = selectedService ? selectedService.name : "Consultation";
+      const lawyerName = selectedLawyer ? selectedLawyer.name : "Advocate";
+      const serviceName = selectedService ? selectedService.name : "Legal Service";
 
-      // 2. Call Supabase Edge Function to securely create Razorpay order (fetching service price securely backend-side)
       const { data: orderData, error: orderError } = await supabase.functions.invoke(
         "create-razorpay-order",
         {
           body: {
             service_id: service,
-            receipt: `receipt_appt_${Date.now()}`,
+            receipt: `receipt_consultation_${Date.now()}`,
           },
         },
       );
@@ -215,18 +205,17 @@ function AppointmentPage() {
         return;
       }
 
-      const { order_id, amount, currency } = orderData;
+      const { order_id, amount, currency, key_id } = orderData;
 
-      // 3. Open Razorpay Checkout Modal
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "",
+        key: key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || "",
         amount: amount,
         currency: currency || "INR",
-        name: "HeartCare Advanced Clinic",
-        description: `Booking: ${serviceName} with ${doctorName}`,
+        name: LAW_FIRM.name,
+        description: `Booking: ${serviceName} with ${lawyerName}`,
         order_id: order_id,
         theme: {
-          color: "#0F766E", // Clinic theme green/teal color
+          color: "#2563EB",
         },
         prefill: {
           name,
@@ -235,7 +224,6 @@ function AppointmentPage() {
         },
         handler: async function (response: RazorpaySuccessResponse) {
           try {
-            // 4. Securely verify signature and create appointment backend-side
             const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
               "verify-razorpay-payment",
               {
@@ -243,12 +231,16 @@ function AppointmentPage() {
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_signature: response.razorpay_signature,
-                  doctor_id: doctor,
+                  lawyer_id: lawyer,
+                  doctor_id: lawyer,
                   service_id: service,
                   date: dateStr,
                   time_slot: slot,
+                  client_name: name,
                   patient_name: name,
+                  client_phone: normalizeIndianPhone(phone),
                   patient_phone: normalizeIndianPhone(phone),
+                  client_email: email,
                   patient_email: email,
                 },
               },
@@ -264,15 +256,14 @@ function AppointmentPage() {
               return;
             }
 
-            // Invalidate queries to update availability and admin views
-            queryClient.invalidateQueries({ queryKey: ["doctor-bookings", doctor, dateStr] });
-            queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
+            queryClient.invalidateQueries({ queryKey: ["lawyer-bookings", lawyer, dateStr] });
+            queryClient.invalidateQueries({ queryKey: ["admin-consultations"] });
             queryClient.invalidateQueries({ queryKey: ["admin-count"] });
 
             setDone(true);
-            toast.success("Appointment booked and payment successful!");
+            toast.success("Consultation booked and payment successful!");
           } catch (err: unknown) {
-            console.error("Signature verification routing error:", err);
+            console.error("Signature verification error:", err);
             toast.error("An error occurred during payment verification. Contact support.");
           } finally {
             setLoading(false);
@@ -308,19 +299,20 @@ function AppointmentPage() {
 
   if (done) {
     return (
-      <section className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-20">
-        <Card>
-          <CardContent className="p-10 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-success/15 text-success grid place-items-center">
+      <main className="bg-[#070c14] text-slate-100 min-h-screen flex items-center justify-center py-20 px-4">
+        <Card className="max-w-xl w-full border-slate-800 bg-[#121b2d] text-slate-100 shadow-2xl rounded-2xl">
+          <CardContent className="p-8 sm:p-10 text-center">
+            <div className="mx-auto h-16 w-16 rounded-full bg-blue-950 border border-blue-600/40 text-blue-400 grid place-items-center">
               <CheckCircle2 className="h-8 w-8" />
             </div>
-            <h1 className="mt-5 text-2xl font-bold">Appointment requested</h1>
-            <p className="mt-2 text-muted-foreground">
-              Thank you, {name}. Our team will call {phone} shortly to confirm your slot on{" "}
-              {date && format(date, "PPP")} at {slot}.
+            <h1 className="mt-5 font-serif text-3xl font-bold text-white">Consultation Confirmed</h1>
+            <p className="mt-3 text-sm leading-relaxed text-slate-300">
+              Thank you, <strong className="text-white">{name}</strong>. Your legal consultation has been booked for{" "}
+              <strong className="text-white">{date && format(date, "PPP")}</strong> at <strong className="text-white">{slot}</strong>.
+              Our chambers will contact you at <strong className="text-white">{phone}</strong> with meeting details.
             </p>
             <Button
-              className="mt-6"
+              className="mt-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl px-6"
               onClick={() => {
                 setDone(false);
                 setName("");
@@ -330,266 +322,272 @@ function AppointmentPage() {
                 setDate(undefined);
               }}
             >
-              Book another
+              Book Another Consultation
             </Button>
           </CardContent>
         </Card>
-      </section>
+      </main>
     );
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
-      <div className="text-center max-w-xl mx-auto">
-        <div className="text-xs font-semibold uppercase tracking-wider text-primary">Booking</div>
-        <h1 className="mt-2 text-4xl sm:text-5xl font-bold">Book an appointment</h1>
-        <p className="mt-3 text-muted-foreground">
-          Choose your doctor, service and a convenient time.
-        </p>
-      </div>
+    <main className="bg-[#070c14] text-slate-100 min-h-screen py-16 sm:py-24">
+      <section className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-xl mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400">
+            <Scale className="h-3.5 w-3.5" />
+            Legal Consultation Booking
+          </div>
+          <h1 className="mt-4 font-serif text-4xl sm:text-5xl font-bold text-white">Book a Consultation</h1>
+          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+            Select your required legal service, preferred advocate, and convenient consultation slot.
+          </p>
+        </div>
 
-      <Card className="mt-10">
-        <CardContent className="p-6 sm:p-8">
-          <form onSubmit={submit} className="space-y-6">
-            <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="Service" id="booking-service">
-                <Select
-                  value={service}
-                  onValueChange={(val) => {
-                    setService(val);
-                    const nextSelection = resetDoctorSelectionForServiceChange();
-                    setDoctor(nextSelection.doctor);
-                    setSlot(nextSelection.slot);
-                  }}
-                  disabled={loadingServices || errorServices}
-                >
-                  <SelectTrigger id="booking-service">
-                    <SelectValue
-                      placeholder={
-                        errorServices
-                          ? "Error loading services"
-                          : loadingServices
-                            ? "Loading services..."
-                            : "Select a service"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services?.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} · {s.price}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
+        <Card className="mt-10 border-slate-800 bg-[#121b2d] text-slate-100 shadow-2xl rounded-2xl overflow-hidden">
+          <CardContent className="p-6 sm:p-10">
+            <form onSubmit={submit} className="space-y-6">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <Field label="Legal Service" id="booking-service">
+                  <Select
+                    value={service}
+                    onValueChange={(val) => {
+                      setService(val);
+                      const nextSelection = resetLawyerSelectionForServiceChange();
+                      setLawyer(nextSelection.lawyer);
+                      setSlot(nextSelection.slot);
+                    }}
+                    disabled={loadingServices || errorServices}
+                  >
+                    <SelectTrigger id="booking-service" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                      <SelectValue
+                        placeholder={
+                          errorServices
+                            ? "Error loading services"
+                            : loadingServices
+                              ? "Loading services..."
+                              : "Select legal service"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                      {services?.map((s) => (
+                        <SelectItem key={s.id} value={s.id} className="focus:bg-slate-800 focus:text-white">
+                          {s.name} · {s.price}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
 
-              <Field label="Doctor" id="booking-doctor">
-                <Select
-                  value={doctor}
-                  onValueChange={(val) => {
-                    setDoctor(val);
-                    setSlot("");
-                  }}
-                  disabled={
-                    !service ||
-                    loadingDoctors ||
-                    loadingServiceDoctors ||
-                    errorDoctors ||
-                    filteredDoctors.length === 0
-                  }
-                >
-                  <SelectTrigger id="booking-doctor">
-                    <SelectValue
-                      placeholder={
-                        !service
-                          ? "Select a service first"
-                          : errorDoctors
-                            ? "Error loading doctors"
-                            : loadingDoctors || loadingServiceDoctors
-                              ? "Finding doctors..."
-                              : filteredDoctors.length === 0
-                                ? "No doctors available"
-                                : "Select a doctor"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredDoctors.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name} — {d.specialization}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {service && loadingServiceDoctors && (
-                  <p className="text-sm text-muted-foreground mt-1.5">
-                    Checking which doctors provide this service...
-                  </p>
-                )}
-                {service &&
-                  !loadingServiceDoctors &&
-                  !hasDoctorMappings &&
-                  filteredDoctors.length > 0 && (
-                    <p className="text-sm text-muted-foreground mt-1.5">
-                      No service-specific doctor mapping is configured yet, so all doctors are
-                      shown.
+                <Field label="Advocate / Lawyer" id="booking-lawyer">
+                  <Select
+                    value={lawyer}
+                    onValueChange={(val) => {
+                      setLawyer(val);
+                      setSlot("");
+                    }}
+                    disabled={
+                      !service ||
+                      loadingLawyers ||
+                      loadingServiceLawyers ||
+                      errorLawyers ||
+                      filteredLawyers.length === 0
+                    }
+                  >
+                    <SelectTrigger id="booking-lawyer" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                      <SelectValue
+                        placeholder={
+                          !service
+                            ? "Select a service first"
+                            : errorLawyers
+                              ? "Error loading lawyers"
+                              : loadingLawyers || loadingServiceLawyers
+                                ? "Finding lawyers..."
+                                : filteredLawyers.length === 0
+                                  ? "No lawyers available"
+                                  : "Select an advocate"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                      {filteredLawyers.map((d) => (
+                        <SelectItem key={d.id} value={d.id} className="focus:bg-slate-800 focus:text-white">
+                          {d.name} — {d.specialization}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {service && loadingServiceLawyers && (
+                    <p className="text-xs text-slate-400 mt-1.5">
+                      Checking available advocates for this practice area...
                     </p>
                   )}
-                {service && !loadingServiceDoctors && filteredDoctors.length === 0 && (
-                  <p className="text-sm text-destructive mt-1.5 font-medium">
-                    No doctor currently provides the selected service.
-                  </p>
-                )}
-              </Field>
+                  {service &&
+                    !loadingServiceLawyers &&
+                    !hasLawyerMappings &&
+                    filteredLawyers.length > 0 && (
+                      <p className="text-xs text-slate-400 mt-1.5">
+                        All active firm advocates are shown for this service.
+                      </p>
+                    )}
+                  {service && !loadingServiceLawyers && filteredLawyers.length === 0 && (
+                    <p className="text-xs text-red-400 mt-1.5 font-medium">
+                      No advocate currently handles the selected service.
+                    </p>
+                  )}
+                </Field>
 
-              <Field label="Date" id="booking-date">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="booking-date"
-                      type="button"
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date ? format(date, "PPP") : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={(val) => {
-                        setDate(val);
-                        setSlot("");
-                      }}
-                      disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </Field>
+                <Field label="Consultation Date" id="booking-date">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id="booking-date"
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal bg-slate-900 border-slate-800 text-white rounded-xl h-11",
+                          !date && "text-slate-500",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-400" />
+                        {date ? format(date, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-[#0f172a] border-slate-800 text-white" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(val) => {
+                          setDate(val);
+                          setSlot("");
+                        }}
+                        disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto bg-[#0f172a] text-slate-100")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </Field>
 
-              <Field label="Time slot" id="booking-slot">
-                <Select
-                  value={slot}
-                  onValueChange={setSlot}
-                  disabled={
-                    !doctor ||
-                    !date ||
-                    loadingHoliday ||
-                    isHoliday ||
-                    loadingBookings ||
-                    loadingAvailability
-                  }
-                >
-                  <SelectTrigger id="booking-slot">
-                    <SelectValue
-                      placeholder={
-                        !doctor || !date
-                          ? "Select doctor & date first"
-                          : isHoliday
-                            ? "Sorry, doctor is on holiday."
-                            : loadingHoliday || loadingBookings || loadingAvailability
-                              ? "Loading slots..."
-                              : "Select a time"
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {!isHoliday &&
-                      slots.map((t) => {
-                        const isBooked = bookedSlots?.includes(t);
-                        return (
-                          <SelectItem key={t} value={t} disabled={isBooked}>
-                            {t} {isBooked ? "— Booked" : ""}
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-                {isHoliday && (
-                  <p className="text-sm text-destructive mt-1.5 font-medium animate-pulse">
-                    Sorry, doctor is on holiday.
-                  </p>
-                )}
-              </Field>
-            </div>
-
-            <div className="pt-2 border-t border-border" />
-
-            <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="Full name" id="booking-name">
-                <Input
-                  id="booking-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
-                />
-              </Field>
-              <Field label="Phone" id="booking-phone">
-                <Input
-                  id="booking-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                />
-                {phone && !isValidIndianPhone(phone) && (
-                  <p className="text-xs text-destructive mt-1">
-                    Enter a valid 10-digit Indian mobile number.
-                  </p>
-                )}
-              </Field>
-              <div className="sm:col-span-2">
-                <Field label="Email" id="booking-email">
-                  <Input
-                    id="booking-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                  />
+                <Field label="Time Slot" id="booking-slot">
+                  <Select
+                    value={slot}
+                    onValueChange={setSlot}
+                    disabled={
+                      !lawyer ||
+                      !date ||
+                      loadingHoliday ||
+                      isHoliday ||
+                      loadingBookings ||
+                      loadingAvailability
+                    }
+                  >
+                    <SelectTrigger id="booking-slot" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                      <SelectValue
+                        placeholder={
+                          !lawyer || !date
+                            ? "Select advocate & date first"
+                            : isHoliday
+                              ? "Advocate is unavailable on this date."
+                              : loadingHoliday || loadingBookings || loadingAvailability
+                                ? "Loading time slots..."
+                                : "Select a time slot"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                      {!isHoliday &&
+                        slots.map((t) => {
+                          const isBooked = bookedSlots?.includes(t);
+                          return (
+                            <SelectItem key={t} value={t} disabled={isBooked} className="focus:bg-slate-800 focus:text-white">
+                              {t} {isBooked ? "— Booked" : ""}
+                            </SelectItem>
+                          );
+                        })}
+                    </SelectContent>
+                  </Select>
+                  {isHoliday && (
+                    <p className="text-xs text-red-400 mt-1.5 font-medium">
+                      Advocate is unavailable on this date.
+                    </p>
+                  )}
                 </Field>
               </div>
-            </div>
 
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Processing...
-                </span>
-              ) : (
-                "Book Appointment"
-              )}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              By booking, you agree to our care policy. Your appointment is confirmed after
-              successful payment.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
-    </section>
+              <div className="pt-2 border-t border-slate-800/80" />
+
+              <div className="grid sm:grid-cols-2 gap-6">
+                <Field label="Client Full Name" id="booking-name">
+                  <Input
+                    id="booking-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your full legal name"
+                    className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                  />
+                </Field>
+                <Field label="Client Phone (India)" id="booking-phone">
+                  <Input
+                    id="booking-phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                  />
+                  {phone && !isValidIndianPhone(phone) && (
+                    <p className="text-xs text-red-400 mt-1">
+                      Enter a valid 10-digit Indian mobile number.
+                    </p>
+                  )}
+                </Field>
+                <div className="sm:col-span-2">
+                  <Field label="Client Email Address" id="booking-email">
+                    <Input
+                      id="booking-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl h-12 text-base shadow-lg shadow-blue-950" disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Launching Payment Gateway...
+                  </span>
+                ) : (
+                  "Proceed to Pay & Confirm Consultation"
+                )}
+              </Button>
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span>Protected by Lawyer-Client Confidentiality & Razorpay SSL Security.</span>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </section>
+    </main>
   );
 }
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-slate-300">{label}</Label>
       {children}
     </div>
   );
 }
 
-// Dynamic script loader for Razorpay checkout SDK
 function loadScript(src: string): Promise<boolean> {
   return new Promise((resolve) => {
     if (document.querySelector(`script[src="${src}"]`)) {

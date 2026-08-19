@@ -61,19 +61,19 @@ export function ImageCarousel({
     return (
       <div
         className={cn(
-          "flex h-full min-h-44 w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-primary-light to-muted p-6 text-center text-muted-foreground",
+          "flex h-full min-h-44 w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-slate-900 to-[#070c14] p-6 text-center text-slate-400 border border-slate-800/60",
           className,
         )}
       >
-        <Images className="h-8 w-8 text-primary/60" aria-hidden="true" />
-        <span className="text-sm font-medium">{emptyLabel}</span>
+        <Images className="h-8 w-8 text-blue-500/60" aria-hidden="true" />
+        <span className="text-xs font-medium">{emptyLabel}</span>
       </div>
     );
   }
 
   return (
     <div
-      className={cn("relative h-full w-full overflow-hidden", className)}
+      className={cn("relative h-full w-full overflow-hidden bg-slate-950", className)}
       aria-roledescription="carousel"
       aria-label={label}
       onTouchStart={(event) => {
@@ -94,7 +94,7 @@ export function ImageCarousel({
           <div
             key={`${image.src}-${index}`}
             className={cn(
-              "flex h-full min-w-full items-center justify-center bg-gradient-to-br from-primary-light to-muted p-2",
+              "flex h-full min-w-full items-center justify-center bg-gradient-to-br from-[#0e1726] to-[#070c14] p-2",
               frameClassName,
             )}
             aria-hidden={index !== activeIndex}
@@ -120,18 +120,18 @@ export function ImageCarousel({
           <button
             type="button"
             onClick={() => goTo(activeIndex - 1)}
-            className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/70 bg-white/90 text-foreground shadow-lg backdrop-blur transition hover:bg-white lg:grid"
+            className="absolute left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-200 shadow-xl backdrop-blur transition hover:bg-blue-600 hover:text-white lg:grid"
             aria-label={`Previous image in ${label}`}
           >
-            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
           <button
             type="button"
             onClick={() => goTo(activeIndex + 1)}
-            className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-white/70 bg-white/90 text-foreground shadow-lg backdrop-blur transition hover:bg-white lg:grid"
+            className="absolute right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-200 shadow-xl backdrop-blur transition hover:bg-blue-600 hover:text-white lg:grid"
             aria-label={`Next image in ${label}`}
           >
-            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </>
       )}
@@ -144,8 +144,8 @@ export function ImageCarousel({
               type="button"
               onClick={() => goTo(index)}
               className={cn(
-                "h-2 rounded-full transition-all",
-                index === activeIndex ? "w-5 bg-primary" : "w-2 bg-white/80",
+                "h-1.5 rounded-full transition-all",
+                index === activeIndex ? "w-5 bg-blue-500" : "w-1.5 bg-slate-600",
               )}
               aria-label={`Show image ${index + 1} of ${normalizedImages.length}`}
               aria-current={index === activeIndex ? "true" : undefined}

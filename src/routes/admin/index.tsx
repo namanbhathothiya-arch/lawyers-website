@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/")({
   head: () => ({
-    meta: [{ title: "Admin Dashboard — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Admin Dashboard — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>
@@ -20,10 +20,10 @@ export const Route = createFileRoute("/admin/")({
 
 function AdminDashboard() {
   const { data: apptCount, isLoading: loadingAppts } = useQuery({
-    queryKey: ["admin-count", "appointments"],
+    queryKey: ["admin-count", "consultations"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("appointments")
+        .from("consultations")
         .select("*", { count: "exact", head: true });
       if (error) throw error;
       return count || 0;
@@ -31,10 +31,10 @@ function AdminDashboard() {
   });
 
   const { data: docCount, isLoading: loadingDocs } = useQuery({
-    queryKey: ["admin-count", "doctors"],
+    queryKey: ["admin-count", "lawyers"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("doctors")
+        .from("lawyers")
         .select("*", { count: "exact", head: true });
       if (error) throw error;
       return count || 0;
@@ -42,10 +42,10 @@ function AdminDashboard() {
   });
 
   const { data: svcCount, isLoading: loadingSvcs } = useQuery({
-    queryKey: ["admin-count", "services"],
+    queryKey: ["admin-count", "legal_services"],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from("services")
+        .from("legal_services")
         .select("*", { count: "exact", head: true });
       if (error) throw error;
       return count || 0;
@@ -69,14 +69,14 @@ function AdminDashboard() {
         <div className="bg-primary text-primary-foreground p-8 rounded-2xl shadow-lg">
           <h3 className="text-2xl font-bold">Welcome back, Admin</h3>
           <p className="mt-2 text-primary-foreground/80 max-w-lg">
-            Manage appointments, doctor-service assignments, weekly schedules, holidays, and clinic
+            Manage consultations, lawyer-service assignments, weekly schedules, holidays, and law firm
             catalog settings.
           </p>
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <DashboardCard
-            label="Total Appointments"
+            label="Total Consultations"
             count={apptCount}
             loading={loadingAppts}
             icon={Calendar}
@@ -84,7 +84,7 @@ function AdminDashboard() {
             to="/admin/appointments"
           />
           <DashboardCard
-            label="Active Doctors"
+            label="Active Lawyers"
             count={docCount}
             loading={loadingDocs}
             icon={Users}
@@ -92,7 +92,7 @@ function AdminDashboard() {
             to="/admin/doctors"
           />
           <DashboardCard
-            label="Offered Services"
+            label="Offered Legal Services"
             count={svcCount}
             loading={loadingSvcs}
             icon={Briefcase}

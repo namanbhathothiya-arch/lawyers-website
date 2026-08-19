@@ -13,7 +13,7 @@ export const PUBLIC_CONTENT_QUERY_OPTIONS = {
   refetchOnWindowFocus: false,
 } as const;
 
-export interface DBDoctor {
+export interface DBLawyer {
   id: string;
   name: string;
   specialization: string;
@@ -28,6 +28,8 @@ export interface DBDoctor {
   created_at?: string;
 }
 
+export type DBDoctor = DBLawyer;
+
 export interface HeroGalleryImage {
   id: string;
   image_url: string;
@@ -36,7 +38,7 @@ export interface HeroGalleryImage {
   is_hero_image: boolean;
 }
 
-export interface DBService {
+export interface DBLegalService {
   id: string;
   name: string;
   description?: string | null;
@@ -47,6 +49,8 @@ export interface DBService {
   photos?: string[] | string | null;
   created_at?: string;
 }
+
+export type DBService = DBLegalService;
 
 export interface DBFaq {
   id: string;
@@ -61,7 +65,9 @@ export interface DBFaq {
 
 export interface DBTestimonial {
   id: string;
-  patient_name: string;
+  client_name: string;
+  client_label?: string | null;
+  patient_name?: string;
   patient_label?: string | null;
   review: string;
   rating: number;
@@ -71,13 +77,13 @@ export interface DBTestimonial {
   created_at?: string;
 }
 
-export function useDoctors() {
-  return useQuery<DBDoctor[]>({
-    queryKey: ["doctors"],
+export function useLawyers() {
+  return useQuery<DBLawyer[]>({
+    queryKey: ["lawyers"],
     ...PUBLIC_CONTENT_QUERY_OPTIONS,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctors")
+        .from("lawyers")
         .select("*")
         .order("name", { ascending: true });
 
@@ -89,13 +95,15 @@ export function useDoctors() {
   });
 }
 
-export function useServices() {
-  return useQuery<DBService[]>({
-    queryKey: ["services"],
+export const useDoctors = useLawyers;
+
+export function useLegalServices() {
+  return useQuery<DBLegalService[]>({
+    queryKey: ["legal_services"],
     ...PUBLIC_CONTENT_QUERY_OPTIONS,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("services")
+        .from("legal_services")
         .select("*")
         .order("name", { ascending: true });
 
@@ -106,6 +114,8 @@ export function useServices() {
     },
   });
 }
+
+export const useServices = useLegalServices;
 
 export function useFaqs() {
   return useQuery<DBFaq[]>({
@@ -146,22 +156,27 @@ export function useTestimonials() {
         );
         return [];
       }
-      return data || [];
+      return (data || []).map((t) => ({
+        ...t,
+        client_name: t.client_name || (t as { patient_name?: string }).patient_name || "",
+        client_label: t.client_label || (t as { patient_label?: string }).patient_label || null,
+      }));
     },
   });
 }
 
 export function useHeroContent() {
   return useQuery<{
-    doctor: DBDoctor | null;
+    lawyer: DBLawyer | null;
     image: HeroGalleryImage | null;
+    doctor?: DBLawyer | null;
   }>({
     queryKey: ["hero-content"],
     ...PUBLIC_CONTENT_QUERY_OPTIONS,
     queryFn: async () => {
-      const [doctorResult, imageResult] = await Promise.all([
+      const [lawyerResult, imageResult] = await Promise.all([
         supabase
-          .from("doctors")
+          .from("lawyers")
           .select("id, name, specialization, experience, photo, bio, is_featured_hero")
           .eq("is_featured_hero", true)
           .limit(1),
@@ -172,23 +187,23 @@ export function useHeroContent() {
           .limit(1),
       ]);
 
-      if (doctorResult.error) {
-        console.warn("Unable to load featured hero doctor:", doctorResult.error.message);
+      if (lawyerResult.error) {
+        console.warn("Unable to load featured hero lawyer:", lawyerResult.error.message);
       }
       if (imageResult.error) {
         console.warn("Unable to load featured hero image:", imageResult.error.message);
       }
 
-      let doctor = (doctorResult.data?.[0] as DBDoctor | undefined) || null;
+      let lawyer = (lawyerResult.data?.[0] as DBLawyer | undefined) || null;
       let image = (imageResult.data?.[0] as HeroGalleryImage | undefined) || null;
 
-      if (!doctor) {
-        const { data: legacyDoctors } = await supabase
-          .from("doctors")
+      if (!lawyer) {
+        const { data: legacyLawyers } = await supabase
+          .from("lawyers")
           .select("id, name, specialization, experience, photo, bio");
-        const legacyDoctor = (legacyDoctors || []).find((item) => isLegacyHeroDoctor(item.photo));
-        if (legacyDoctor) {
-          doctor = { ...legacyDoctor, photo: cleanDoctorPhoto(legacyDoctor.photo) };
+        const legacyLawyer = (legacyLawyers || []).find((item) => isLegacyHeroDoctor(item.photo));
+        if (legacyLawyer) {
+          lawyer = { ...legacyLawyer, photo: cleanDoctorPhoto(legacyLawyer.photo) };
         }
       }
 
@@ -206,64 +221,70 @@ export function useHeroContent() {
         }
       }
 
-      return { doctor, image };
+      return { lawyer, image, doctor: lawyer };
     },
   });
 }
 
-export function useDoctorHoliday(doctorId: string, dateStr: string) {
+export function useLawyerUnavailability(lawyerId: string, dateStr: string) {
   return useQuery<boolean>({
-    queryKey: ["doctor-holiday", doctorId, dateStr],
+    queryKey: ["lawyer-unavailability", lawyerId, dateStr],
     queryFn: async () => {
-      if (!doctorId || !dateStr) return false;
+      if (!lawyerId || !dateStr) return false;
       const { data, error } = await supabase
-        .from("doctor_holidays")
+        .from("lawyer_holidays")
         .select("id")
-        .eq("doctor_id", doctorId)
+        .eq("lawyer_id", lawyerId)
         .eq("date", dateStr);
 
       if (error) throw error;
       return (data || []).length > 0;
     },
-    enabled: !!doctorId && !!dateStr,
+    enabled: !!lawyerId && !!dateStr,
   });
 }
 
-export function useDoctorBookings(doctorId: string, dateStr: string) {
+export const useDoctorHoliday = useLawyerUnavailability;
+
+export function useLawyerBookings(lawyerId: string, dateStr: string) {
   return useQuery<string[]>({
-    queryKey: ["doctor-bookings", doctorId, dateStr],
+    queryKey: ["lawyer-bookings", lawyerId, dateStr],
     queryFn: async () => {
-      if (!doctorId || !dateStr) return [];
+      if (!lawyerId || !dateStr) return [];
       const { data, error } = await supabase
         .from("public_bookings")
         .select("time_slot")
-        .eq("doctor_id", doctorId)
+        .eq("lawyer_id", lawyerId)
         .eq("date", dateStr)
         .neq("status", "cancelled");
 
       if (error) throw error;
       return (data || []).map((b) => b.time_slot);
     },
-    enabled: !!doctorId && !!dateStr,
+    enabled: !!lawyerId && !!dateStr,
   });
 }
 
-export function useDoctorIdsForService(serviceId: string) {
+export const useDoctorBookings = useLawyerBookings;
+
+export function useLawyerIdsForService(serviceId: string) {
   return useQuery<string[]>({
-    queryKey: ["service-doctors", serviceId],
+    queryKey: ["service-lawyers", serviceId],
     queryFn: async () => {
       if (!serviceId) return [];
       const { data, error } = await supabase
-        .from("doctor_services")
-        .select("doctor_id")
+        .from("lawyer_services")
+        .select("lawyer_id")
         .eq("service_id", serviceId);
 
       if (error) throw error;
-      return (data || []).map((row) => row.doctor_id);
+      return (data || []).map((row) => row.lawyer_id);
     },
     enabled: !!serviceId,
   });
 }
+
+export const useDoctorIdsForService = useLawyerIdsForService;
 
 export interface DBAvailability {
   start_time: string;
@@ -271,20 +292,22 @@ export interface DBAvailability {
   slot_duration_minutes: number;
 }
 
-export function useDoctorAvailability(doctorId: string, dayOfWeek: number | undefined) {
+export function useLawyerAvailability(lawyerId: string, dayOfWeek: number | undefined) {
   return useQuery<DBAvailability[]>({
-    queryKey: ["doctor-availability", doctorId, dayOfWeek],
+    queryKey: ["lawyer-availability", lawyerId, dayOfWeek],
     queryFn: async () => {
-      if (!doctorId || dayOfWeek === undefined) return [];
+      if (!lawyerId || dayOfWeek === undefined) return [];
       const { data, error } = await supabase
         .from("availability")
         .select("start_time, end_time, slot_duration_minutes")
-        .eq("doctor_id", doctorId)
+        .eq("lawyer_id", lawyerId)
         .eq("day_of_week", dayOfWeek);
 
       if (error) throw error;
       return data || [];
     },
-    enabled: !!doctorId && dayOfWeek !== undefined,
+    enabled: !!lawyerId && dayOfWeek !== undefined,
   });
 }
+
+export const useDoctorAvailability = useLawyerAvailability;

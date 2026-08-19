@@ -41,19 +41,27 @@ import { toast } from "sonner";
 
 type PaymentStatus = "pending" | "paid" | "refund_pending" | "refunded" | "failed";
 
-type AppointmentRecord = {
+type ConsultationRecord = {
   id: string;
-  doctor_id: string;
+  lawyer_id: string;
+  doctor_id?: string;
   service_id: string;
   date: string;
   time_slot: string;
-  patient_name: string;
-  patient_phone: string;
-  patient_email: string;
+  client_name: string;
+  client_phone: string;
+  client_email: string;
+  patient_name?: string;
+  patient_phone?: string;
+  patient_email?: string;
   status: AppointmentStatus;
   payment_status: PaymentStatus;
   payment_id?: string | null;
   order_id?: string | null;
+  lawyer?: {
+    name: string;
+    specialization: string;
+  } | null;
   doctor?: {
     name: string;
     specialization: string;
@@ -63,7 +71,7 @@ type AppointmentRecord = {
   } | null;
 };
 
-type DoctorOption = {
+type LawyerOption = {
   id: string;
   name: string;
 };
@@ -75,20 +83,20 @@ type AppointmentsManagerProps = {
 
 const viewCopy: Record<AppointmentView, { title: string; empty: string }> = {
   all: {
-    title: "Appointments Log",
-    empty: "No appointments found",
+    title: "Consultations Log",
+    empty: "No consultations found",
   },
   today: {
     title: "Today's Schedule",
-    empty: "No appointments scheduled for today",
+    empty: "No consultations scheduled for today",
   },
   upcoming: {
-    title: "Upcoming Appointments",
-    empty: "No upcoming appointments found",
+    title: "Upcoming Consultations",
+    empty: "No upcoming consultations found",
   },
   search: {
-    title: "Search Patients",
-    empty: "No matching appointments found",
+    title: "Search Clients",
+    empty: "No matching consultations found",
   },
 };
 
@@ -96,78 +104,91 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [doctorFilter, setDoctorFilter] = useState<string>("all");
+  const [lawyerFilter, setLawyerFilter] = useState<string>("all");
   const [dateFilter, setDateFilter] = useState("");
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentRecord | null>(null);
+  const [selectedConsultation, setSelectedConsultation] = useState<ConsultationRecord | null>(null);
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
   const copy = viewCopy[view];
 
-  const { data: doctors } = useQuery({
-    queryKey: ["doctors"],
+  const { data: lawyers } = useQuery({
+    queryKey: ["lawyers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctors")
+        .from("lawyers")
         .select("id, name")
         .order("name", { ascending: true });
       if (error) throw error;
-      return (data || []) as DoctorOption[];
+      return (data || []) as LawyerOption[];
     },
   });
 
   const {
-    data: appointments,
+    data: rawConsultations,
     isLoading,
     isError,
     error,
     refetch,
   } = useQuery({
-    queryKey: ["admin-appointments"],
+    queryKey: ["admin-consultations"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("appointments")
+        .from("consultations")
         .select(
           `
           *,
-          doctor:doctors (name, specialization),
-          service:services (name)
+          lawyer:lawyers (name, specialization),
+          service:legal_services (name)
         `,
         )
         .order("date", { ascending: view === "all" ? false : true })
         .order("time_slot", { ascending: true });
 
       if (error) throw error;
-      return (data || []) as AppointmentRecord[];
+      return (data || []).map((row) => ({
+        ...row,
+        client_name: row.client_name || row.patient_name || "",
+        client_phone: row.client_phone || row.patient_phone || "",
+        client_email: row.client_email || row.patient_email || "",
+        patient_name: row.client_name || row.patient_name || "",
+        patient_phone: row.client_phone || row.patient_phone || "",
+        patient_email: row.client_email || row.patient_email || "",
+        lawyer: row.lawyer || row.doctor,
+        doctor: row.lawyer || row.doctor,
+        lawyer_id: row.lawyer_id || row.doctor_id,
+        doctor_id: row.lawyer_id || row.doctor_id,
+      })) as ConsultationRecord[];
     },
   });
 
   const statusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: AppointmentStatus }) => {
-      const { error } = await supabase.from("appointments").update({ status }).eq("id", id);
+      const { error } = await supabase.from("consultations").update({ status }).eq("id", id);
       if (error) throw error;
       return { id, status };
     },
     onSuccess: ({ id, status }) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-consultations"] });
       queryClient.invalidateQueries({ queryKey: ["admin-count"] });
-      setSelectedAppointment((current) => (current?.id === id ? { ...current, status } : current));
-      toast.success("Appointment status updated.");
+      setSelectedConsultation((current) => (current?.id === id ? { ...current, status } : current));
+      toast.success("Consultation status updated.");
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Failed to update appointment status.");
+      toast.error(err.message || "Failed to update consultation status.");
     },
   });
 
-  const filteredAppointments = useMemo(
+  const filteredConsultations = useMemo(
     () =>
-      filterAppointments(appointments || [], {
+      filterAppointments(rawConsultations || [], {
         view,
         today,
         searchTerm,
         statusFilter,
-        doctorFilter,
+        lawyerFilter,
+        doctorFilter: lawyerFilter,
         dateFilter,
       }),
-    [appointments, dateFilter, doctorFilter, searchTerm, statusFilter, today, view],
+    [rawConsultations, dateFilter, lawyerFilter, searchTerm, statusFilter, today, view],
   );
 
   function visibleTransitions(status: AppointmentStatus) {
@@ -226,12 +247,12 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
             <CardTitle className="text-xl font-bold">{copy.title}</CardTitle>
             {view === "today" && (
               <p className="text-sm text-muted-foreground mt-1">
-                {format(new Date(), "PPP")} appointment operations.
+                {format(new Date(), "PPP")} consultation operations.
               </p>
             )}
             {view === "search" && (
               <p className="text-sm text-muted-foreground mt-1">
-                Find a patient by name, phone, or email and open their appointment.
+                Find a client by name, phone, or email and open their consultation.
               </p>
             )}
           </div>
@@ -270,13 +291,13 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
               </SelectContent>
             </Select>
 
-            <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+            <Select value={lawyerFilter} onValueChange={setLawyerFilter}>
               <SelectTrigger>
-                <SelectValue placeholder="Filter by doctor" />
+                <SelectValue placeholder="Filter by lawyer" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Doctors</SelectItem>
-                {doctors?.map((doc) => (
+                <SelectItem value="all">All Lawyers</SelectItem>
+                {lawyers?.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
                     {doc.name}
                   </SelectItem>
@@ -299,14 +320,14 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
           {isLoading ? (
             <div className="py-20 text-center flex flex-col items-center gap-3">
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading appointments...</p>
+              <p className="text-sm text-muted-foreground">Loading consultations...</p>
             </div>
           ) : isError ? (
             <div className="py-20 text-center text-destructive border border-dashed border-destructive/20 rounded-xl bg-destructive/5">
-              <p className="font-semibold">Error loading appointments</p>
+              <p className="font-semibold">Error loading consultations</p>
               <p className="text-sm mt-1">{error?.message || "Unknown error occurred"}</p>
             </div>
-          ) : filteredAppointments.length === 0 ? (
+          ) : filteredConsultations.length === 0 ? (
             <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
               <p className="font-semibold">{copy.empty}</p>
               <p className="text-sm text-muted-foreground mt-1">
@@ -321,26 +342,26 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
                 <Table>
                   <TableHeader className="bg-secondary/40">
                     <TableRow>
-                      <TableHead>Patient</TableHead>
+                      <TableHead>Client</TableHead>
                       <TableHead>{view === "today" ? "Time" : "Date & Time"}</TableHead>
-                      <TableHead>Doctor</TableHead>
+                      <TableHead>Lawyer</TableHead>
                       <TableHead>Status</TableHead>
                       {role === "admin" && <TableHead>Payment</TableHead>}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAppointments.map((appt) => (
+                    {filteredConsultations.map((appt) => (
                       <TableRow key={appt.id} className="hover:bg-secondary/25">
                         <TableCell className="py-4 font-medium">
                           <div className="flex items-center gap-1.5">
                             <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            {appt.patient_name}
+                            {appt.client_name}
                           </div>
                           <div className="text-xs text-muted-foreground mt-0.5">
-                            {appt.patient_phone}
+                            {appt.client_phone}
                           </div>
-                          <div className="text-xs text-muted-foreground">{appt.patient_email}</div>
+                          <div className="text-xs text-muted-foreground">{appt.client_email}</div>
                         </TableCell>
                         <TableCell className="py-4">
                           {view !== "today" && (
@@ -355,9 +376,9 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
                           </div>
                         </TableCell>
                         <TableCell className="py-4">
-                          <div className="font-semibold">{appt.doctor?.name || "Unknown Doctor"}</div>
+                          <div className="font-semibold">{appt.lawyer?.name || "Unknown Lawyer"}</div>
                           <div className="text-xs text-primary">
-                            {appt.service?.name || "Unknown Service"}
+                            {appt.service?.name || "Unknown Legal Service"}
                           </div>
                         </TableCell>
                         <TableCell className="py-4">{getStatusBadge(appt.status)}</TableCell>
@@ -371,7 +392,7 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setSelectedAppointment(appt)}
+                              onClick={() => setSelectedConsultation(appt)}
                               className="h-8"
                             >
                               <Eye className="h-3.5 w-3.5 mr-1" />
@@ -413,36 +434,36 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
       </Card>
 
       <Dialog
-        open={selectedAppointment !== null}
-        onOpenChange={(open) => !open && setSelectedAppointment(null)}
+        open={selectedConsultation !== null}
+        onOpenChange={(open) => !open && setSelectedConsultation(null)}
       >
         <DialogContent className="max-w-2xl bg-background border border-border">
-          {selectedAppointment && (
+          {selectedConsultation && (
             <>
               <DialogHeader>
-                <DialogTitle>{selectedAppointment.patient_name}</DialogTitle>
+                <DialogTitle>{selectedConsultation.client_name}</DialogTitle>
                 <DialogDescription>
-                  Appointment details and receptionist workflow actions.
+                  Consultation details and workflow actions.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid sm:grid-cols-2 gap-4 text-sm">
-                <Detail label="Phone" value={selectedAppointment.patient_phone} />
-                <Detail label="Email" value={selectedAppointment.patient_email} />
+                <Detail label="Phone" value={selectedConsultation.client_phone} />
+                <Detail label="Email" value={selectedConsultation.client_email} />
                 <Detail
-                  label="Doctor"
-                  value={selectedAppointment.doctor?.name || "Unknown Doctor"}
+                  label="Lawyer"
+                  value={selectedConsultation.lawyer?.name || "Unknown Lawyer"}
                 />
                 <Detail
-                  label="Service"
-                  value={selectedAppointment.service?.name || "Unknown Service"}
+                  label="Legal Service"
+                  value={selectedConsultation.service?.name || "Unknown Legal Service"}
                 />
-                <Detail label="Date" value={format(new Date(selectedAppointment.date), "PPP")} />
-                <Detail label="Time" value={selectedAppointment.time_slot} />
+                <Detail label="Date" value={format(new Date(selectedConsultation.date), "PPP")} />
+                <Detail label="Time" value={selectedConsultation.time_slot} />
                 <div>
                   <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                     Status
                   </div>
-                  <div className="mt-1">{getStatusBadge(selectedAppointment.status)}</div>
+                  <div className="mt-1">{getStatusBadge(selectedConsultation.status)}</div>
                 </div>
                 {role === "admin" && (
                   <div>
@@ -450,18 +471,18 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
                       Payment
                     </div>
                     <div className="mt-1">
-                      {getPaymentBadge(selectedAppointment.payment_status)}
+                      {getPaymentBadge(selectedConsultation.payment_status)}
                     </div>
                   </div>
                 )}
               </div>
               <div className="pt-4 border-t border-border flex items-center justify-end gap-2 flex-wrap">
-                {visibleTransitions(selectedAppointment.status).map((next) => (
+                {visibleTransitions(selectedConsultation.status).map((next) => (
                   <Button
                     key={next.status}
                     variant={next.status === "cancelled" ? "destructive" : "default"}
                     size="sm"
-                    onClick={() => updateStatus(selectedAppointment.id, next.status)}
+                    onClick={() => updateStatus(selectedConsultation.id, next.status)}
                     disabled={statusMutation.isPending}
                   >
                     {next.label}

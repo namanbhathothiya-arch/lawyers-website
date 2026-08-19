@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2, RefreshCw, CalendarX } from "lucide-react";
+import { Trash2, RefreshCw, CalendarX } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import {
@@ -36,20 +36,20 @@ import {
 
 export function HolidaysManager() {
   const queryClient = useQueryClient();
-  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  const [selectedLawyerId, setSelectedLawyerId] = useState("");
   const [holidayDate, setHolidayDate] = useState("");
-  const [doctorFilter, setDoctorFilter] = useState("all");
+  const [lawyerFilter, setLawyerFilter] = useState("all");
 
   // Deletion confirmation state
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDetails, setDeleteDetails] = useState("");
 
-  // Fetch Doctors (for dropdown and filter)
-  const { data: doctors } = useQuery({
-    queryKey: ["doctors"],
+  // Fetch Lawyers (for dropdown and filter)
+  const { data: lawyers } = useQuery({
+    queryKey: ["lawyers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctors")
+        .from("lawyers")
         .select("id, name, specialization")
         .order("name", { ascending: true });
       if (error) throw error;
@@ -68,25 +68,29 @@ export function HolidaysManager() {
     queryKey: ["admin-holidays"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctor_holidays")
+        .from("lawyer_holidays")
         .select(
           `
           *,
-          doctor:doctors (name, specialization)
+          lawyer:lawyers (name, specialization)
         `,
         )
         .order("date", { ascending: true });
       if (error) throw error;
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        lawyer: row.lawyer || (row as { doctor?: { name: string; specialization: string } }).doctor,
+        lawyer_id: row.lawyer_id || (row as { doctor_id?: string }).doctor_id,
+      }));
     },
   });
 
   // Add Holiday Mutation
   const addHolidayMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("doctor_holidays").insert([
+      const { error } = await supabase.from("lawyer_holidays").insert([
         {
-          doctor_id: selectedDoctorId,
+          lawyer_id: selectedLawyerId,
           date: holidayDate,
         },
       ]);
@@ -94,17 +98,16 @@ export function HolidaysManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-holidays"] });
-      // Invalidate booking client queries too
-      queryClient.invalidateQueries({ queryKey: ["doctor-holiday"] });
-      toast.success("Holiday block added successfully!");
+      queryClient.invalidateQueries({ queryKey: ["lawyer-unavailability"] });
+      toast.success("Unavailability date added successfully!");
       setHolidayDate("");
     },
-    onError: (err: any) => {
-      // Check for uniqueness violation
-      if (err.code === "23505") {
-        toast.error("This doctor is already set to be on holiday on this date.");
+    onError: (err: unknown) => {
+      const errorObj = err as { code?: string; message?: string };
+      if (errorObj.code === "23505") {
+        toast.error("This lawyer is already set to be unavailable on this date.");
       } else {
-        toast.error(err.message || "Failed to add holiday.");
+        toast.error(errorObj.message || "Failed to add holiday.");
       }
     },
   });
@@ -112,35 +115,36 @@ export function HolidaysManager() {
   // Remove Holiday Mutation
   const removeHolidayMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("doctor_holidays").delete().eq("id", id);
+      const { error } = await supabase.from("lawyer_holidays").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-holidays"] });
-      queryClient.invalidateQueries({ queryKey: ["doctor-holiday"] });
-      toast.success("Holiday block removed.");
+      queryClient.invalidateQueries({ queryKey: ["lawyer-unavailability"] });
+      toast.success("Unavailability date removed.");
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to remove holiday block.");
+    onError: (err: unknown) => {
+      const errorObj = err as { message?: string };
+      toast.error(errorObj.message || "Failed to remove unavailability block.");
     },
   });
 
   function handleAddHoliday(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDoctorId) {
-      toast.error("Please select a doctor.");
+    if (!selectedLawyerId) {
+      toast.error("Please select a lawyer.");
       return;
     }
     if (!holidayDate) {
-      toast.error("Please select a holiday date.");
+      toast.error("Please select an unavailability date.");
       return;
     }
     addHolidayMutation.mutate();
   }
 
   // Filter Logic
-  const filteredHolidays = holidays?.filter((h: any) => {
-    return doctorFilter === "all" || h.doctor_id === doctorFilter;
+  const filteredHolidays = holidays?.filter((h) => {
+    return lawyerFilter === "all" || h.lawyer_id === lawyerFilter;
   });
 
   return (
@@ -150,19 +154,19 @@ export function HolidaysManager() {
         <CardHeader>
           <CardTitle className="text-xl font-bold flex items-center gap-2">
             <CalendarX className="h-5 w-5 text-primary" />
-            <span>Add Holiday Block</span>
+            <span>Add Unavailability Block</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAddHoliday} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Select Doctor</Label>
-              <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+              <Label>Select Lawyer</Label>
+              <Select value={selectedLawyerId} onValueChange={setSelectedLawyerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose doctor" />
+                  <SelectValue placeholder="Choose lawyer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {doctors?.map((doc: any) => (
+                  {lawyers?.map((doc) => (
                     <SelectItem key={doc.id} value={doc.id}>
                       {doc.name} — {doc.specialization}
                     </SelectItem>
@@ -172,7 +176,7 @@ export function HolidaysManager() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Holiday Date</Label>
+              <Label>Unavailability Date</Label>
               <Input
                 type="date"
                 value={holidayDate}
@@ -182,7 +186,7 @@ export function HolidaysManager() {
             </div>
 
             <Button type="submit" className="w-full mt-2" disabled={addHolidayMutation.isPending}>
-              {addHolidayMutation.isPending ? "Adding block..." : "Add Holiday Block"}
+              {addHolidayMutation.isPending ? "Adding block..." : "Add Unavailability Block"}
             </Button>
           </form>
         </CardContent>
@@ -191,15 +195,15 @@ export function HolidaysManager() {
       {/* HOLIDAYS LIST */}
       <Card className="border-border shadow-sm lg:col-span-2">
         <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <CardTitle className="text-xl font-bold">Scheduled Holidays</CardTitle>
+          <CardTitle className="text-xl font-bold">Scheduled Unavailability</CardTitle>
           <div className="flex items-center gap-2 self-start">
-            <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+            <Select value={lawyerFilter} onValueChange={setLawyerFilter}>
               <SelectTrigger className="w-[180px] h-9">
-                <SelectValue placeholder="All Doctors" />
+                <SelectValue placeholder="All Lawyers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Doctors</SelectItem>
-                {doctors?.map((doc: any) => (
+                <SelectItem value="all">All Lawyers</SelectItem>
+                {lawyers?.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
                     {doc.name}
                   </SelectItem>
@@ -212,43 +216,41 @@ export function HolidaysManager() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* LOADING & ERROR STATES */}
           {isLoading ? (
             <div className="py-20 text-center flex flex-col items-center gap-3">
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Loading holidays list...</p>
+              <p className="text-sm text-muted-foreground">Loading unavailability list...</p>
             </div>
           ) : isError ? (
             <div className="py-20 text-center text-destructive border border-dashed border-destructive/20 rounded-xl bg-destructive/5">
-              <p className="font-semibold">Error loading holidays</p>
-              <p className="text-sm mt-1">{error?.message || "Unknown error occurred"}</p>
+              <p className="font-semibold">Error loading unavailability dates</p>
+              <p className="text-sm mt-1">{(error as Error)?.message || "Unknown error occurred"}</p>
             </div>
           ) : !filteredHolidays || filteredHolidays.length === 0 ? (
             <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
-              <p className="font-semibold">No holidays scheduled</p>
+              <p className="font-semibold">No unavailability dates scheduled</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Select a doctor and date on the left to schedule a holiday block.
+                Select a lawyer and date on the left to schedule an unavailability block.
               </p>
             </div>
           ) : (
-            /* TABLE */
             <div className="border border-border rounded-xl overflow-hidden bg-background">
               <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-secondary/40">
                     <TableRow>
-                      <TableHead>Doctor</TableHead>
-                      <TableHead>Holiday Date</TableHead>
+                      <TableHead>Lawyer</TableHead>
+                      <TableHead>Unavailability Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredHolidays.map((holiday: any) => (
+                    {filteredHolidays.map((holiday) => (
                       <TableRow key={holiday.id} className="hover:bg-secondary/25">
                         <TableCell className="py-3.5 font-semibold">
-                          {holiday.doctor?.name || "Unknown Doctor"}
+                          {holiday.lawyer?.name || "Unknown Lawyer"}
                           <div className="text-xs text-muted-foreground font-normal">
-                            {holiday.doctor?.specialization}
+                            {holiday.lawyer?.specialization}
                           </div>
                         </TableCell>
                         <TableCell className="py-3.5 text-sm font-medium">
@@ -262,7 +264,7 @@ export function HolidaysManager() {
                             onClick={() => {
                               setDeleteId(holiday.id);
                               setDeleteDetails(
-                                `${holiday.doctor?.name || "Doctor"} on ${format(new Date(holiday.date), "PP")}`,
+                                `${holiday.lawyer?.name || "Lawyer"} on ${format(new Date(holiday.date), "PP")}`,
                               );
                             }}
                             disabled={removeHolidayMutation.isPending}
@@ -284,11 +286,11 @@ export function HolidaysManager() {
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent className="bg-background border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-lg font-bold">Remove holiday block?</AlertDialogTitle>
+            <AlertDialogTitle className="text-lg font-bold">Remove unavailability block?</AlertDialogTitle>
             <AlertDialogDescription className="text-sm text-muted-foreground">
-              Are you sure you want to remove the holiday block for{" "}
+              Are you sure you want to remove the unavailability block for{" "}
               <span className="font-semibold text-foreground">{deleteDetails}</span>? This will make
-              their slots available for patient bookings on this date.
+              their slots available for client bookings on this date.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

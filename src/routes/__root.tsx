@@ -73,26 +73,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "HeartCare Advanced Clinic" },
+      { title: "Sharma & Associates — Trusted Legal Counsel" },
       {
         name: "description",
         content:
-          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
+          "Sharma & Associates provides expert legal representation and trusted counsel. Consult experienced lawyers for your legal needs.",
       },
-      { property: "og:title", content: "HeartCare Advanced Clinic" },
+      { property: "og:title", content: "Sharma & Associates — Trusted Legal Counsel" },
       {
         property: "og:description",
         content:
-          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
+          "Sharma & Associates provides expert legal representation and trusted counsel. Consult experienced lawyers for your legal needs.",
       },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
+      { property: "og:image", content: "/og-image.jpg" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "HeartCare Advanced Clinic" },
+      { name: "twitter:title", content: "Sharma & Associates — Trusted Legal Counsel" },
       {
         name: "twitter:description",
         content:
-          "HeartCare Advanced Clinic provides advanced cardiac care with compassion under Dr. Raj Sharma, Interventional Cardiology.",
+          "Sharma & Associates provides expert legal representation and trusted counsel. Consult experienced lawyers for your legal needs.",
       },
     ],
     links: [
@@ -102,7 +102,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Inter:wght@300;400;500;600;700&display=swap",
       },
     ],
   }),

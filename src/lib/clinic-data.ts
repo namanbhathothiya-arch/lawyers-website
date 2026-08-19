@@ -1,18 +1,18 @@
 import doc1 from "@/assets/doctor-1.jpg";
 
-export const CLINIC = {
-  name: "HeartCare Advanced Clinic",
-  tagline: "Advanced Cardiac Care with Compassion",
-  doctor: "Dr. Raj Sharma",
-  specialization: "Interventional Cardiology",
+export const LAW_FIRM = {
+  name: "Sharma & Associates",
+  tagline: "Trusted Legal Counsel",
+  lawyer: "Adv. Raj Sharma",
+  specialization: "Legal Services",
   phone: "+91 9876543210",
   emergencyPhone: "+91 9876543210",
   whatsapp: "919876543210",
-  email: "contact@heartcareclinic.com",
-  address: "123 Medical Plaza, New Delhi",
+  email: "contact@sharmalaw.in",
+  address: "123 Law Chambers, New Delhi",
   workingDays: "Monday-Saturday",
   workingHours: "9:00 AM - 6:00 PM",
-  mapsEmbed: "https://www.google.com/maps?q=123%20Medical%20Plaza%2C%20New%20Delhi&output=embed",
+  mapsEmbed: "https://www.google.com/maps?q=123%20Law%20Chambers%2C%20New%20Delhi&output=embed",
   socials: {
     facebook: "",
     instagram: "",
@@ -22,7 +22,9 @@ export const CLINIC = {
   },
 };
 
-export type Doctor = {
+export const CLINIC = LAW_FIRM;
+
+export type Lawyer = {
   id: string;
   name: string;
   specialization: string;
@@ -31,62 +33,70 @@ export type Doctor = {
   bio: string;
 };
 
-export const DOCTORS: Doctor[] = [
+export type Doctor = Lawyer;
+
+export const LAWYERS: Lawyer[] = [
   {
-    id: "dr-raj-sharma",
-    name: "Dr. Raj Sharma",
-    specialization: "Interventional Cardiology",
-    experience: "Experienced specialist",
+    id: "adv-raj-sharma",
+    name: "Adv. Raj Sharma",
+    specialization: "Corporate Law",
+    experience: "Experienced legal counsel",
     photo: doc1,
-    bio: "Compassionate, advanced cardiac care with expertise in interventional cardiology.",
+    bio: "Compassionate, advanced legal care with expertise in corporate law.",
   },
 ];
 
-export type Service = {
+export const DOCTORS = LAWYERS;
+
+export type LegalService = {
   id: string;
   name: string;
   description: string;
   price: string;
 };
 
-export const SERVICES: Service[] = [
+export type Service = LegalService;
+
+export const LEGAL_SERVICES: LegalService[] = [
   {
-    id: "general-consultation",
-    name: "General Consultation",
-    description: "Comprehensive checkup with a general physician.",
-    price: "₹600",
+    id: "property-law",
+    name: "Property Law Consultation",
+    description: "Comprehensive property dispute resolution and documentation.",
+    price: "₹1,500",
   },
   {
-    id: "cardiac-screening",
-    name: "Cardiac Screening",
-    description: "ECG, BP and risk-profile assessment with a cardiologist.",
+    id: "family-law",
+    name: "Family Law",
+    description: "Expert advice on family matters, divorce, and child custody.",
     price: "₹2,200",
   },
   {
-    id: "skin-consultation",
-    name: "Skin Consultation",
-    description: "Diagnosis and treatment plan from a dermatologist.",
-    price: "₹900",
+    id: "corporate-advisory",
+    name: "Corporate Advisory",
+    description: "Corporate restructuring, contracts, and compliance.",
+    price: "₹3,000",
   },
   {
-    id: "orthopedic-consultation",
-    name: "Orthopedic Consultation",
-    description: "Joint, bone and sports-injury evaluation.",
-    price: "₹1,200",
+    id: "criminal-defence",
+    name: "Criminal Defence",
+    description: "Strong representation in criminal proceedings.",
+    price: "₹2,500",
   },
   {
-    id: "full-body-checkup",
-    name: "Full Body Health Checkup",
-    description: "70+ parameter health screening with report.",
-    price: "₹3,500",
+    id: "civil-litigation",
+    name: "Civil Litigation",
+    description: "Civil dispute resolution and court representation.",
+    price: "₹1,800",
   },
   {
-    id: "vaccination",
-    name: "Vaccination",
-    description: "Adult and child vaccination at the clinic.",
-    price: "From ₹500",
+    id: "legal-documentation",
+    name: "Legal Documentation",
+    description: "Drafting of deeds, agreements, and legal notices.",
+    price: "From ₹1,000",
   },
 ];
+
+export const SERVICES = LEGAL_SERVICES;
 
 export const TIME_SLOTS = [
   "09:00 AM",
@@ -102,26 +112,28 @@ export const TIME_SLOTS = [
 export const TESTIMONIALS = [
   {
     name: "Priya S.",
-    text: "The doctors took time to actually listen. Booking was effortless and the clinic feels reassuringly professional.",
-    role: "Patient",
+    text: "The lawyers took time to actually listen. Booking was effortless and the law firm feels reassuringly professional.",
+    role: "Client",
   },
   {
     name: "Rohan K.",
-    text: "Clean, modern, and on-time appointments. Dr. Raj Sharma explained every step of my cardiac care clearly.",
-    role: "Patient",
+    text: "Clear, modern, and on-time meetings. Adv. Raj Sharma explained every step of my legal case clearly.",
+    role: "Client",
   },
   {
     name: "Meera J.",
-    text: "From reception to consultation, the experience felt genuinely caring. Highly recommend HeartCare Advanced Clinic.",
-    role: "Patient",
+    text: "From reception to consultation, the experience felt genuinely professional. Highly recommend Sharma & Associates.",
+    role: "Client",
   },
 ];
 
-export const DOCTOR_IMAGES: Record<string, string> = {
-  "dr-raj-sharma": doc1,
+export const LAWYER_IMAGES: Record<string, string> = {
+  "adv-raj-sharma": doc1,
 };
 
-export function getDoctorImage(id: string, dbPhoto?: string | null) {
+export const DOCTOR_IMAGES = LAWYER_IMAGES;
+
+export function getLawyerImage(id: string, dbPhoto?: string | null) {
   if (
     dbPhoto &&
     (dbPhoto.startsWith("http") || dbPhoto.startsWith("/") || dbPhoto.startsWith("data:"))
@@ -129,5 +141,7 @@ export function getDoctorImage(id: string, dbPhoto?: string | null) {
     return dbPhoto;
   }
   const key = id ? id.toLowerCase().replace(/\s+/g, "-") : "";
-  return DOCTOR_IMAGES[key] || DOCTOR_IMAGES[id] || doc1;
+  return LAWYER_IMAGES[key] || LAWYER_IMAGES[id] || doc1;
 }
+
+export const getDoctorImage = getLawyerImage;

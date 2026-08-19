@@ -55,7 +55,7 @@ serve(async (req) => {
 
     // Fetch service price securely from the database
     const { data: service, error: serviceError } = await supabaseClient
-      .from("services")
+      .from("legal_services")
       .select("price")
       .eq("id", service_id)
       .single();
@@ -111,6 +111,7 @@ serve(async (req) => {
         order_id: order.id,
         amount: order.amount,
         currency: order.currency,
+        key_id: keyId,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

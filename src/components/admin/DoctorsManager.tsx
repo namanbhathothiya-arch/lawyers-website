@@ -1,88 +1,52 @@
-import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
-import {
-  Plus,
+  Briefcase,
+  Check,
   Edit2,
-  Trash2,
-  RefreshCw,
-  UserCheck,
-  BriefcaseMedical,
-  Upload,
+  Image as ImageIcon,
+  Loader2,
+  Plus,
   Sparkles,
+  Trash2,
+  Users,
+  X,
 } from "lucide-react";
-import { getDoctorImage } from "@/lib/clinic-data";
-import { cleanDoctorPhoto, isLegacyHeroDoctor, setLegacyHeroDoctor } from "@/lib/hero-content";
-import { getDoctorServiceSyncChanges, uniqueServiceIds } from "@/lib/doctor-service-utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import { getLawyerImage } from "@/lib/clinic-data";
+import { cleanLawyerPhoto, isLegacyHeroLawyer, setLegacyHeroLawyer } from "@/lib/hero-content";
+import { getLawyerServiceSyncChanges, uniqueServiceIds } from "@/lib/doctor-service-utils";
 
-type DoctorServiceMapping = {
+type LawyerServiceMapping = {
   service_id: string;
 };
 
-type AdminDoctor = {
+type AdminLawyer = {
   id: string;
   name: string;
   specialization: string;
   experience: string;
   photo?: string | null;
   bio?: string | null;
-  is_featured_hero: boolean;
-  doctor_services?: DoctorServiceMapping[];
+  is_featured_hero?: boolean;
+  lawyer_services?: LawyerServiceMapping[];
+  doctor_services?: LawyerServiceMapping[];
 };
 
-type AdminService = {
+type LegalServiceOption = {
   id: string;
   name: string;
+  price: string;
 };
-
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function isMissingHeroColumn(error: unknown) {
-  const message =
-    typeof error === "object" && error && "message" in error
-      ? String(error.message)
-      : getErrorMessage(error);
-  return message.includes("is_featured_hero") && message.includes("schema cache");
-}
 
 export function DoctorsManager() {
   const queryClient = useQueryClient();
-  const [isOpen, setIsOpen] = useState(false);
-  const [editingDoctor, setEditingDoctor] = useState<AdminDoctor | null>(null);
 
-  // Deletion confirmation state
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [deleteName, setDeleteName] = useState("");
+  const [editingLawyer, setEditingLawyer] = useState<AdminLawyer | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Form states
+  // Form State
   const [name, setName] = useState("");
   const [specialization, setSpecialization] = useState("");
   const [experience, setExperience] = useState("");
@@ -90,68 +54,45 @@ export function DoctorsManager() {
   const [bio, setBio] = useState("");
   const [isFeaturedHero, setIsFeaturedHero] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  // Image Upload states
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string>("");
-
-  const handleSelectedFile = (file: File) => {
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please upload a PNG, JPG, JPEG, or WEBP image.");
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error("File too large. Maximum permitted file size is 5 MB.");
-      return;
-    }
-
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
-  };
-
-  // Fetch Doctors
+  // Fetch Lawyers
   const {
-    data: doctors,
+    data: lawyers,
     isLoading,
     isError,
-    error,
-    refetch,
   } = useQuery({
-    queryKey: ["admin-doctors"],
+    queryKey: ["admin-lawyers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctors")
-        .select("*, doctor_services(service_id)")
+        .from("lawyers")
+        .select("*, lawyer_services(service_id)")
         .order("name", { ascending: true });
+
       if (error) throw error;
-      return (data || []) as AdminDoctor[];
+      return (data || []).map((row) => ({
+        ...row,
+        lawyer_services: row.lawyer_services || (row as { doctor_services?: LawyerServiceMapping[] }).doctor_services || [],
+      })) as AdminLawyer[];
     },
   });
 
-  // Fetch Services for doctor-service assignments
-  const {
-    data: services,
-    isLoading: loadingServices,
-    isError: errorServices,
-    error: servicesError,
-  } = useQuery({
-    queryKey: ["admin-services-for-doctors"],
+  // Fetch Legal Services for assignment
+  const { data: legalServices } = useQuery({
+    queryKey: ["admin-services-for-lawyers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("services")
-        .select("id, name")
+        .from("legal_services")
+        .select("id, name, price")
         .order("name", { ascending: true });
+
       if (error) throw error;
-      return (data || []) as AdminService[];
+      return (data || []) as LegalServiceOption[];
     },
   });
 
-  // Open modal for Adding
-  function handleAddOpen() {
-    setEditingDoctor(null);
+  function resetForm() {
     setName("");
     setSpecialization("");
     setExperience("");
@@ -159,60 +100,60 @@ export function DoctorsManager() {
     setBio("");
     setIsFeaturedHero(false);
     setSelectedServiceIds([]);
-    setImageFile(null);
-    setImagePreview("");
-    setIsOpen(true);
+    setFile(null);
+    setIsCreating(false);
+    setEditingLawyer(null);
   }
 
-  // Open modal for Editing
-  function handleEditOpen(doc: AdminDoctor) {
-    setEditingDoctor(doc);
-    setName(doc.name);
-    setSpecialization(doc.specialization);
-    setExperience(doc.experience);
-    setPhoto(cleanDoctorPhoto(doc.photo) || "");
-    setBio(doc.bio || "");
-    setIsFeaturedHero(doc.is_featured_hero || isLegacyHeroDoctor(doc.photo));
-    setSelectedServiceIds((doc.doctor_services || []).map((mapping) => mapping.service_id));
-    setImageFile(null);
-    setImagePreview(doc.photo || "");
-    setIsOpen(true);
+  function handleCreateOpen() {
+    resetForm();
+    setIsCreating(true);
   }
 
-  function toggleService(serviceId: string, checked: boolean) {
-    setSelectedServiceIds((current) => {
-      if (checked) {
-        return uniqueServiceIds([...current, serviceId]);
-      }
-
-      return current.filter((id) => id !== serviceId);
-    });
+  function handleEditOpen(lawyer: AdminLawyer) {
+    setEditingLawyer(lawyer);
+    setName(lawyer.name);
+    setSpecialization(lawyer.specialization);
+    setExperience(lawyer.experience);
+    setPhoto(cleanLawyerPhoto(lawyer.photo) || "");
+    setBio(lawyer.bio || "");
+    setIsFeaturedHero(lawyer.is_featured_hero || isLegacyHeroLawyer(lawyer.photo));
+    const mappings = lawyer.lawyer_services || lawyer.doctor_services || [];
+    setSelectedServiceIds(mappings.map((mapping) => mapping.service_id));
+    setFile(null);
+    setIsCreating(false);
   }
 
-  async function syncDoctorServices(doctorId: string) {
-    const { data: existingMappings, error: existingError } = await supabase
-      .from("doctor_services")
+  function toggleServiceSelection(serviceId: string) {
+    setSelectedServiceIds((prev) =>
+      prev.includes(serviceId) ? prev.filter((id) => id !== serviceId) : [...prev, serviceId],
+    );
+  }
+
+  async function syncLawyerServices(lawyerId: string) {
+    const { data: existingRows, error: fetchErr } = await supabase
+      .from("lawyer_services")
       .select("service_id")
-      .eq("doctor_id", doctorId);
+      .eq("lawyer_id", lawyerId);
 
-    if (existingError) throw existingError;
+    if (fetchErr) throw fetchErr;
 
-    const currentServiceIds = (existingMappings || []).map((mapping) => mapping.service_id);
-    const { add, remove } = getDoctorServiceSyncChanges(currentServiceIds, selectedServiceIds);
+    const currentServiceIds = (existingRows || []).map((row) => row.service_id);
+    const { add, remove } = getLawyerServiceSyncChanges(currentServiceIds, selectedServiceIds);
 
     if (remove.length > 0) {
       const { error } = await supabase
-        .from("doctor_services")
+        .from("lawyer_services")
         .delete()
-        .eq("doctor_id", doctorId)
+        .eq("lawyer_id", lawyerId)
         .in("service_id", remove);
       if (error) throw error;
     }
 
     if (add.length > 0) {
-      const { error } = await supabase.from("doctor_services").insert(
+      const { error } = await supabase.from("lawyer_services").insert(
         add.map((serviceId) => ({
-          doctor_id: doctorId,
+          lawyer_id: lawyerId,
           service_id: serviceId,
         })),
       );
@@ -220,542 +161,468 @@ export function DoctorsManager() {
     }
   }
 
-  // Helper to compress image before uploading
-  async function compressImage(file: File, maxWidth = 800, maxHeight = 800): Promise<Blob> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          let width = img.width;
-          let height = img.height;
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("lawyers").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
+      toast.success("Lawyer removed successfully");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to delete lawyer: ${error.message}`);
+    },
+  });
 
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
+  const setHeroMutation = useMutation({
+    mutationFn: async (lawyer: AdminLawyer) => {
+      const { error: resetError } = await supabase
+        .from("lawyers")
+        .update({ is_featured_hero: false })
+        .neq("id", lawyer.id);
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0, width, height);
+      if (resetError) throw resetError;
 
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(new Error("Image compression failed."));
-              }
-            },
-            file.type === "image/png" ? "image/png" : "image/jpeg",
-            0.85,
-          );
-        };
-        img.onerror = (err) => reject(err);
-      };
-      reader.onerror = (err) => reject(err);
-    });
-  }
+      const updatedPhoto = setLegacyHeroLawyer(cleanLawyerPhoto(lawyer.photo), true);
+      const { error: updateError } = await supabase
+        .from("lawyers")
+        .update({
+          is_featured_hero: true,
+          photo: updatedPhoto,
+        })
+        .eq("id", lawyer.id);
 
-  // Add/Edit Mutation
+      if (updateError) throw updateError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
+      toast.success("Featured Lawyer updated");
+    },
+    onError: (error: Error) => {
+      toast.error(`Failed to set featured lawyer: ${error.message}`);
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const doctorId = editingDoctor ? editingDoctor.id : crypto.randomUUID();
+      setUploading(true);
       let uploadedPhotoUrl = photo;
 
-      if (imageFile) {
-        const toastId = toast.loading("Uploading image...");
-        try {
-          // Compress the image
-          const compressedBlob = await compressImage(imageFile);
+      const lawyerId = editingLawyer ? editingLawyer.id : crypto.randomUUID();
 
-          // Construct clean upload path
-          const cleanFileName = imageFile.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-          const filePath = `${doctorId}/${cleanFileName}`;
+      if (file) {
+        const fileExt = file.name.split(".").pop();
+        const cleanFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const filePath = `${lawyerId}/${cleanFileName}`;
 
-          // Upload to Supabase Storage
-          const { error: uploadError } = await supabase.storage
-            .from("doctor-images")
-            .upload(filePath, compressedBlob, {
-              contentType: imageFile.type,
-              upsert: true,
-            });
+        const { error: uploadError } = await supabase.storage
+          .from("lawyer-images")
+          .upload(filePath, file, { upsert: true });
 
-          if (uploadError) throw uploadError;
-
-          // Retrieve public url
-          const {
-            data: { publicUrl },
-          } = supabase.storage.from("doctor-images").getPublicUrl(filePath);
-
-          uploadedPhotoUrl = publicUrl;
-          toast.success("Image uploaded successfully", { id: toastId });
-        } catch (uploadErr: unknown) {
-          toast.error(`Upload failed: ${getErrorMessage(uploadErr)}`, { id: toastId });
-          throw uploadErr;
+        if (uploadError) {
+          throw new Error(`Photo upload failed: ${uploadError.message}`);
         }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("lawyer-images").getPublicUrl(filePath);
+
+        uploadedPhotoUrl = publicUrl;
       }
 
       const docPayload = {
         name,
         specialization,
         experience,
-        photo: uploadedPhotoUrl || null,
         bio: bio || null,
         is_featured_hero: isFeaturedHero,
-      };
-      const legacyPayload = {
-        name,
-        specialization,
-        experience,
-        photo: setLegacyHeroDoctor(uploadedPhotoUrl || null, isFeaturedHero),
-        bio: bio || null,
+        photo: setLegacyHeroLawyer(uploadedPhotoUrl || null, isFeaturedHero),
       };
 
-      if (editingDoctor) {
-        // Update
+      if (editingLawyer) {
+        if (isFeaturedHero) {
+          const { error: resetErr } = await supabase
+            .from("lawyers")
+            .update({ is_featured_hero: false })
+            .neq("id", editingLawyer.id);
+
+          if (resetErr) throw resetErr;
+
+          const legacyHeroMatches = (lawyers || []).filter(
+            (l) => l.id !== editingLawyer.id && isLegacyHeroLawyer(l.photo),
+          );
+
+          await Promise.all(
+            legacyHeroMatches.map((l) =>
+              supabase
+                .from("lawyers")
+                .update({ photo: cleanLawyerPhoto(l.photo) })
+                .eq("id", l.id),
+            ),
+          );
+        }
+
         const { error } = await supabase
-          .from("doctors")
+          .from("lawyers")
           .update(docPayload)
-          .eq("id", editingDoctor.id);
-        if (error) {
-          if (!isMissingHeroColumn(error)) throw error;
-          if (isFeaturedHero) {
-            await Promise.all(
-              (doctors || [])
-                .filter(
-                  (doctor) => doctor.id !== editingDoctor.id && isLegacyHeroDoctor(doctor.photo),
-                )
-                .map((doctor) =>
-                  supabase
-                    .from("doctors")
-                    .update({ photo: cleanDoctorPhoto(doctor.photo) })
-                    .eq("id", doctor.id),
-                ),
-            );
-          }
-          const { error: retryError } = await supabase
-            .from("doctors")
-            .update(legacyPayload)
-            .eq("id", editingDoctor.id);
-          if (retryError) throw retryError;
-          toast.success("Doctor saved and selected for the Hero Section.");
-        }
-        await syncDoctorServices(editingDoctor.id);
+          .eq("id", editingLawyer.id);
+
+        if (error) throw error;
+
+        await syncLawyerServices(editingLawyer.id);
       } else {
-        // Create (with custom id)
-        const { error } = await supabase.from("doctors").insert([{ id: doctorId, ...docPayload }]);
-        if (error) {
-          if (!isMissingHeroColumn(error)) throw error;
-          if (isFeaturedHero) {
-            await Promise.all(
-              (doctors || [])
-                .filter((doctor) => isLegacyHeroDoctor(doctor.photo))
-                .map((doctor) =>
-                  supabase
-                    .from("doctors")
-                    .update({ photo: cleanDoctorPhoto(doctor.photo) })
-                    .eq("id", doctor.id),
-                ),
-            );
-          }
-          const { error: retryError } = await supabase
-            .from("doctors")
-            .insert([{ id: doctorId, ...legacyPayload }]);
-          if (retryError) throw retryError;
-          toast.success("Doctor saved and selected for the Hero Section.");
+        if (isFeaturedHero) {
+          await supabase
+            .from("lawyers")
+            .update({ is_featured_hero: false })
+            .neq("id", lawyerId);
+
+          const legacyHeroMatches = (lawyers || []).filter((l) => isLegacyHeroLawyer(l.photo));
+
+          await Promise.all(
+            legacyHeroMatches.map((l) =>
+              supabase
+                .from("lawyers")
+                .update({ photo: cleanLawyerPhoto(l.photo) })
+                .eq("id", l.id),
+            ),
+          );
         }
-        await syncDoctorServices(doctorId);
+
+        const { error } = await supabase.from("lawyers").insert([{ id: lawyerId, ...docPayload }]);
+
+        if (error) throw error;
+
+        await syncLawyerServices(lawyerId);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["service-doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-count"] });
+      setUploading(false);
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyers"] });
       queryClient.invalidateQueries({ queryKey: ["hero-content"] });
-      toast.success(editingDoctor ? "Doctor updated successfully!" : "Doctor added successfully!");
-      setIsOpen(false);
+      toast.success(editingLawyer ? "Lawyer updated" : "Lawyer created");
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to save doctor record.");
+    onError: (error: Error) => {
+      setUploading(false);
+      toast.error(`Save failed: ${error.message}`);
     },
   });
-
-  // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      // 1. Clean up Supabase Storage files associated with this doctor ID
-      try {
-        const { data: files, error: listError } = await supabase.storage
-          .from("doctor-images")
-          .list(id);
-
-        if (!listError && files && files.length > 0) {
-          const filesToRemove = files.map((file) => `${id}/${file.name}`);
-          const { error: removeError } = await supabase.storage
-            .from("doctor-images")
-            .remove(filesToRemove);
-          if (removeError) console.error("Failed to clean up files:", removeError);
-        }
-      } catch (err) {
-        console.error("Storage clean up encountered error:", err);
-      }
-
-      // 2. Delete database record
-      const { error } = await supabase.from("doctors").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["service-doctors"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-count"] });
-      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
-      toast.success("Doctor record deleted successfully.");
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Failed to delete doctor. Ensure no appointments reference them.");
-    },
-  });
-
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name || !specialization || !experience) {
-      toast.error("Please fill in all required fields (Name, Specialization, Experience)");
-      return;
-    }
-    saveMutation.mutate();
-  }
 
   return (
-    <Card className="border-border shadow-sm">
-      <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Manage Doctors</CardTitle>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="flex items-center gap-1.5"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
-          </Button>
-          <Button size="sm" onClick={handleAddOpen} className="flex items-center gap-1">
-            <Plus className="h-4 w-4" /> Add Doctor
-          </Button>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Lawyers Catalog</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your firm&apos;s legal practitioners, bios, and service assignments.
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        {/* LOADING & ERROR STATES */}
-        {isLoading ? (
-          <div className="py-20 text-center flex flex-col items-center gap-3">
-            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading doctors list...</p>
-          </div>
-        ) : isError ? (
-          <div className="py-20 text-center text-destructive border border-dashed border-destructive/20 rounded-xl bg-destructive/5">
-            <p className="font-semibold">Error loading doctors</p>
-            <p className="text-sm mt-1">{error?.message || "Unknown error occurred"}</p>
-          </div>
-        ) : !doctors || doctors.length === 0 ? (
-          <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
-            <p className="font-semibold">No doctors registered</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Click "Add Doctor" to create your first practitioner profile.
-            </p>
-          </div>
-        ) : (
-          /* LIST GRID */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {doctors.map((d) => (
-              <Card
-                key={d.id}
-                className="overflow-hidden border-border bg-background hover:shadow-md transition-shadow relative"
-              >
-                <div className="aspect-[4/3] bg-muted relative">
-                  <img
-                    src={getDoctorImage(d.id, d.photo)}
-                    alt={d.name}
-                    className="h-full w-full object-cover object-top"
-                  />
-                  {(d.is_featured_hero || isLegacyHeroDoctor(d.photo)) && (
-                    <Badge className="absolute left-3 top-3 gap-1.5 bg-primary text-primary-foreground shadow">
-                      <Sparkles className="h-3 w-3" aria-hidden="true" />
-                      Hero Doctor
-                    </Badge>
-                  )}
-                  <div className="absolute top-3 right-3 flex gap-1.5">
-                    <Button
-                      size="icon"
-                      variant="secondary"
-                      className="h-8 w-8 bg-background/80 hover:bg-background shadow"
-                      onClick={() => handleEditOpen(d)}
-                    >
-                      <Edit2 className="h-3.5 w-3.5 text-foreground" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="h-8 w-8 shadow"
-                      onClick={() => {
-                        setDeleteId(d.id);
-                        setDeleteName(d.name);
-                      }}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive-foreground" />
-                    </Button>
-                  </div>
-                </div>
-                <CardContent className="p-5">
-                  <h3 className="text-lg font-semibold flex items-center gap-1.5">
-                    <UserCheck className="h-4 w-4 text-primary" /> {d.name}
-                  </h3>
-                  <p className="text-sm text-primary font-medium mt-0.5">{d.specialization}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{d.experience} experience</p>
-                  <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <BriefcaseMedical className="h-3.5 w-3.5 text-primary" />
-                    Services: {d.doctor_services?.length || 0}
-                  </div>
-                  {d.bio && (
-                    <p className="text-sm text-foreground/80 mt-3 line-clamp-2 leading-relaxed">
-                      {d.bio}
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+
+        {!isCreating && !editingLawyer && (
+          <button
+            onClick={handleCreateOpen}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Lawyer
+          </button>
         )}
+      </div>
 
-        {/* DIALOG MODAL (ADD / EDIT) */}
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogContent className="max-w-lg bg-background border border-border max-h-[90vh] flex flex-col overflow-hidden p-0">
-            <DialogHeader className="p-6 pb-2 shrink-0">
-              <DialogTitle className="text-xl font-bold">
-                {editingDoctor ? "Edit Doctor Profile" : "Create New Doctor"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-2 space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="doc-name">
-                    Full name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="doc-name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Dr. Raj Sharma"
-                  />
-                </div>
+      {/* Form Drawer / Container */}
+      {(isCreating || editingLawyer) && (
+        <div className="p-6 border border-border rounded-xl bg-card shadow-sm space-y-6 animate-in fade-in-50">
+          <div className="flex items-center justify-between border-b border-border pb-4">
+            <h2 className="text-lg font-semibold">
+              {editingLawyer ? `Edit Lawyer: ${editingLawyer.name}` : "Create New Lawyer"}
+            </h2>
+            <button
+              onClick={resetForm}
+              className="p-1 rounded-md text-muted-foreground hover:bg-secondary transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="doc-spec">
-                      Specialization <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="doc-spec"
-                      value={specialization}
-                      onChange={(e) => setSpecialization(e.target.value)}
-                      placeholder="e.g. General Physician"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="doc-exp">
-                      Experience <span className="text-destructive">*</span>
-                    </Label>
-                    <Input
-                      id="doc-exp"
-                      value={experience}
-                      onChange={(e) => setExperience(e.target.value)}
-                      placeholder="e.g. 8 years"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Doctor Photo</Label>
-                  <div
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const files = e.dataTransfer.files;
-                      if (files && files.length > 0) {
-                        handleSelectedFile(files[0]);
-                      }
-                    }}
-                    className="border-2 border-dashed border-border hover:border-primary/50 transition-colors rounded-xl p-4 text-center cursor-pointer flex flex-col items-center justify-center gap-2 bg-secondary/5 max-h-[220px] overflow-hidden"
-                    onClick={() => document.getElementById("doc-photo-file")?.click()}
-                  >
-                    <input
-                      id="doc-photo-file"
-                      type="file"
-                      accept="image/png, image/jpeg, image/jpg, image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const files = e.target.files;
-                        if (files && files.length > 0) {
-                          handleSelectedFile(files[0]);
-                        }
-                      }}
-                    />
-                    {imagePreview ? (
-                      <div className="relative group w-32 h-32 max-h-[200px] rounded-xl overflow-hidden shadow border border-border">
-                        <img
-                          src={imagePreview}
-                          alt="Doctor Preview"
-                          className="w-full h-full object-cover object-top max-h-[200px]"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="text-white text-xs font-semibold">Change Photo</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
-                        <p className="text-sm font-medium">Drag photo here</p>
-                        <p className="text-xs text-muted-foreground">or click to Select Image</p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Supported formats: JPG, JPEG, PNG, WEBP. Max size: 5 MB.
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="doc-bio">Short Biography</Label>
-                  <Textarea
-                    id="doc-bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Describe doctor clinical interests, background..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
-                  <div>
-                    <Label htmlFor="feature-hero-doctor" className="font-semibold">
-                      Feature on Hero Section
-                    </Label>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Selecting this doctor automatically replaces the current hero doctor.
-                    </p>
-                  </div>
-                  <Switch
-                    id="feature-hero-doctor"
-                    checked={isFeaturedHero}
-                    onCheckedChange={setIsFeaturedHero}
-                    aria-label="Feature on Hero Section"
-                  />
-                </div>
-
-                <div className="space-y-3 rounded-xl border border-border p-4">
-                  <div>
-                    <Label>Services Provided</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Select every service this doctor can be booked for.
-                    </p>
-                  </div>
-
-                  {loadingServices ? (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      Loading services...
-                    </div>
-                  ) : errorServices ? (
-                    <p className="text-sm text-destructive">
-                      Failed to load services: {servicesError?.message || "Unknown error"}
-                    </p>
-                  ) : !services || services.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No services exist yet. Add services before assigning them to doctors.
-                    </p>
-                  ) : (
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      {services.map((service) => (
-                        <label
-                          key={service.id}
-                          htmlFor={`service-${service.id}`}
-                          className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-secondary/30 cursor-pointer"
-                        >
-                          <Checkbox
-                            id={`service-${service.id}`}
-                            checked={selectedServiceIds.includes(service.id)}
-                            onCheckedChange={(checked) =>
-                              toggleService(service.id, checked === true)
-                            }
-                          />
-                          <span className="font-medium">{service.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveMutation.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name & Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Adv. Raj Sharma"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                />
               </div>
 
-              <DialogFooter className="p-6 border-t border-border shrink-0 bg-background">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={saveMutation.isPending || loadingServices}>
-                  {saveMutation.isPending ? "Saving..." : "Save Record"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Specialization / Practice Area *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Corporate Law"
+                  value={specialization}
+                  onChange={(e) => setSpecialization(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
 
-        {/* DELETE CONFIRMATION ALERT DIALOG */}
-        <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
-          <AlertDialogContent className="bg-background border border-border">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="text-lg font-bold">
-                Are you absolutely sure?
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-sm text-muted-foreground">
-                This will permanently delete the practitioner profile for{" "}
-                <span className="font-semibold text-foreground">{deleteName}</span> and remove all
-                their associated availability and holiday configurations. This action cannot be
-                undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setDeleteId(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive hover:bg-destructive/95 text-destructive-foreground"
-                onClick={() => {
-                  if (deleteId) {
-                    deleteMutation.mutate(deleteId);
-                  }
-                  setDeleteId(null);
-                }}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Experience Level *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Senior Partner (15+ Yrs)"
+                  value={experience}
+                  onChange={(e) => setExperience(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Photo Upload / URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="https://... or upload photo"
+                    value={photo}
+                    onChange={(e) => setPhoto(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm"
+                  />
+                  <label className="cursor-pointer px-3 py-2 border border-input rounded-md bg-secondary/50 hover:bg-secondary text-sm flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4" />
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => setFile(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+                {file && <p className="text-xs text-primary font-medium">Selected file: {file.name}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Biography / Professional Profile</label>
+              <textarea
+                rows={3}
+                placeholder="Brief professional profile and experience summary..."
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+              />
+            </div>
+
+            {/* Legal Service Mapping */}
+            <div className="space-y-2 border-t border-border pt-4">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-primary" />
+                <span>Assigned Legal Services</span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Select which services this lawyer provides. Used for service-first booking filter.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-2">
+                {(legalServices || []).map((service) => {
+                  const isChecked = selectedServiceIds.includes(service.id);
+                  return (
+                    <button
+                      key={service.id}
+                      type="button"
+                      onClick={() => toggleServiceSelection(service.id)}
+                      className={`flex items-center justify-between p-3 rounded-lg border text-left text-sm transition-all ${
+                        isChecked
+                          ? "border-primary bg-primary/10 text-foreground font-medium"
+                          : "border-border hover:bg-secondary/40 text-muted-foreground"
+                      }`}
+                    >
+                      <span>{service.name}</span>
+                      {isChecked && <Check className="h-4 w-4 text-primary" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Featured Hero Checkbox */}
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="isFeaturedHero"
+                checked={isFeaturedHero}
+                onChange={(e) => setIsFeaturedHero(e.target.checked)}
+                className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+              />
+              <label htmlFor="isFeaturedHero" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                <Sparkles className="h-4 w-4 text-amber-500 fill-amber-500" />
+                <span>Feature as Main Hero Lawyer on Homepage</span>
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-border">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-4 py-2 border border-input rounded-md text-sm font-medium hover:bg-secondary transition-colors"
               >
-                Delete Profile
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={saveMutation.isPending || uploading}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2"
+              >
+                {(saveMutation.isPending || uploading) && <Loader2 className="h-4 w-4 animate-spin" />}
+                {editingLawyer ? "Save Changes" : "Create Lawyer"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Lawyers Grid */}
+      {isLoading ? (
+        <div className="flex justify-center p-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : isError ? (
+        <div className="p-4 border border-destructive/30 bg-destructive/10 rounded-lg text-destructive text-sm">
+          Failed to load lawyers list.
+        </div>
+      ) : (lawyers || []).length === 0 ? (
+        <div className="p-12 text-center border border-dashed rounded-xl bg-card">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+          <h3 className="font-semibold text-lg">No Lawyers Found</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add your firm&apos;s lawyers to display on the booking portal.
+          </p>
+          <button
+            onClick={handleCreateOpen}
+            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg"
+          >
+            Add First Lawyer
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {(lawyers || []).map((lawyer) => {
+            const isHero = lawyer.is_featured_hero || isLegacyHeroLawyer(lawyer.photo);
+            const lawyerImg = getLawyerImage(lawyer.id, cleanLawyerPhoto(lawyer.photo));
+            const assignedServices = lawyer.lawyer_services || lawyer.doctor_services || [];
+
+            return (
+              <div
+                key={lawyer.id}
+                className={`border rounded-xl bg-card p-5 flex flex-col justify-between transition-all relative overflow-hidden ${
+                  isHero ? "ring-2 ring-amber-500/50 shadow-md" : "border-border"
+                }`}
+              >
+                {isHero && (
+                  <div className="absolute top-0 right-0 bg-amber-500 text-black font-semibold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-lg flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 fill-black" />
+                    Featured Hero
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={lawyerImg}
+                      alt={lawyer.name}
+                      className="h-16 w-16 rounded-full object-cover border border-border"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-base">{lawyer.name}</h3>
+                      <p className="text-xs font-medium text-primary">{lawyer.specialization}</p>
+                      <p className="text-xs text-muted-foreground">{lawyer.experience}</p>
+                    </div>
+                  </div>
+
+                  {lawyer.bio && <p className="text-xs text-muted-foreground line-clamp-2">{lawyer.bio}</p>}
+
+                  <div className="pt-2 border-t border-border/60">
+                    <span className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                      Assigned Legal Services ({assignedServices.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {assignedServices.length === 0 ? (
+                        <span className="text-xs text-muted-foreground italic">All services (fallback)</span>
+                      ) : (
+                        assignedServices.map((mapping) => {
+                          const svc = (legalServices || []).find((s) => s.id === mapping.service_id);
+                          return (
+                            <span
+                              key={mapping.service_id}
+                              className="text-[11px] px-2 py-0.5 rounded bg-secondary text-secondary-foreground font-medium"
+                            >
+                              {svc?.name || mapping.service_id}
+                            </span>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
+                  <button
+                    onClick={() => setHeroMutation.mutate(lawyer)}
+                    disabled={isHero || setHeroMutation.isPending}
+                    className={`text-xs font-medium flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors ${
+                      isHero
+                        ? "text-amber-500 bg-amber-500/10 cursor-default"
+                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    }`}
+                  >
+                    <Sparkles className={`h-3.5 w-3.5 ${isHero ? "fill-amber-500" : ""}`} />
+                    {isHero ? "Main Hero" : "Set Featured"}
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleEditOpen(lawyer)}
+                      className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
+                      title="Edit Lawyer"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to remove ${lawyer.name}?`)) {
+                          deleteMutation.mutate(lawyer.id);
+                        }
+                      }}
+                      className="p-1.5 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                      title="Delete Lawyer"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

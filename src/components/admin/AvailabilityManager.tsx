@@ -20,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2, RefreshCw, Clock } from "lucide-react";
+import { Trash2, RefreshCw, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
@@ -37,23 +37,23 @@ const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "F
 
 export function AvailabilityManager() {
   const queryClient = useQueryClient();
-  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  const [selectedLawyerId, setSelectedLawyerId] = useState("");
   const [dayOfWeek, setDayOfWeek] = useState<string>("");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("17:00");
   const [slotDuration, setSlotDuration] = useState("60");
-  const [doctorFilter, setDoctorFilter] = useState("all");
+  const [lawyerFilter, setLawyerFilter] = useState("all");
 
   // Deletion confirmation state
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDetails, setDeleteDetails] = useState("");
 
-  // Fetch Doctors (for dropdown and filter)
-  const { data: doctors } = useQuery({
-    queryKey: ["doctors"],
+  // Fetch Lawyers (for dropdown and filter)
+  const { data: lawyers } = useQuery({
+    queryKey: ["lawyers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("doctors")
+        .from("lawyers")
         .select("id, name, specialization")
         .order("name", { ascending: true });
       if (error) throw error;
@@ -76,13 +76,17 @@ export function AvailabilityManager() {
         .select(
           `
           *,
-          doctor:doctors (name, specialization)
+          lawyer:lawyers (name, specialization)
         `,
         )
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
       if (error) throw error;
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        lawyer: row.lawyer || (row as { doctor?: { name: string; specialization: string } }).doctor,
+        lawyer_id: row.lawyer_id || (row as { doctor_id?: string }).doctor_id,
+      }));
     },
   });
 
@@ -91,9 +95,9 @@ export function AvailabilityManager() {
     mutationFn: async () => {
       const { error } = await supabase.from("availability").insert([
         {
-          doctor_id: selectedDoctorId,
+          lawyer_id: selectedLawyerId,
           day_of_week: parseInt(dayOfWeek),
-          start_time: startTime + ":00", // Format to HH:MM:SS
+          start_time: startTime + ":00",
           end_time: endTime + ":00",
           slot_duration_minutes: parseInt(slotDuration),
         },
@@ -102,18 +106,18 @@ export function AvailabilityManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-availability"] });
-      // Invalidate booking client queries too
-      queryClient.invalidateQueries({ queryKey: ["doctor-availability"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyer-availability"] });
       toast.success("Availability block configured successfully!");
       setDayOfWeek("");
     },
-    onError: (err: any) => {
-      if (err.code === "23505") {
+    onError: (err: unknown) => {
+      const errorObj = err as { code?: string; message?: string };
+      if (errorObj.code === "23505") {
         toast.error(
-          "This doctor already has a schedule block defined for this day at this start time.",
+          "This lawyer already has a schedule block defined for this day at this start time.",
         );
       } else {
-        toast.error(err.message || "Failed to add availability.");
+        toast.error(errorObj.message || "Failed to add availability.");
       }
     },
   });
@@ -126,18 +130,19 @@ export function AvailabilityManager() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-availability"] });
-      queryClient.invalidateQueries({ queryKey: ["doctor-availability"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyer-availability"] });
       toast.success("Schedule block removed.");
     },
-    onError: (err: any) => {
-      toast.error(err.message || "Failed to remove availability.");
+    onError: (err: unknown) => {
+      const errorObj = err as { message?: string };
+      toast.error(errorObj.message || "Failed to remove availability.");
     },
   });
 
   function handleAddAvailability(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedDoctorId) {
-      toast.error("Please select a doctor.");
+    if (!selectedLawyerId) {
+      toast.error("Please select a lawyer.");
       return;
     }
     if (dayOfWeek === "") {
@@ -160,14 +165,13 @@ export function AvailabilityManager() {
   }
 
   // Filter Logic
-  const filteredAvailability = availability?.filter((a: any) => {
-    return doctorFilter === "all" || a.doctor_id === doctorFilter;
+  const filteredAvailability = availability?.filter((a) => {
+    return lawyerFilter === "all" || a.lawyer_id === lawyerFilter;
   });
 
   // Format TIME display
   function formatTimeDisplay(timeStr: string) {
     if (!timeStr) return "";
-    // Remove seconds if they are present: '09:00:00' -> '09:00'
     const parts = timeStr.split(":");
     if (parts.length >= 2) {
       const hours = parseInt(parts[0]);
@@ -192,13 +196,13 @@ export function AvailabilityManager() {
         <CardContent>
           <form onSubmit={handleAddAvailability} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Select Doctor</Label>
-              <Select value={selectedDoctorId} onValueChange={setSelectedDoctorId}>
+              <Label>Select Lawyer</Label>
+              <Select value={selectedLawyerId} onValueChange={setSelectedLawyerId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Choose doctor" />
+                  <SelectValue placeholder="Choose lawyer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {doctors?.map((doc: any) => (
+                  {lawyers?.map((doc) => (
                     <SelectItem key={doc.id} value={doc.id}>
                       {doc.name} — {doc.specialization}
                     </SelectItem>
@@ -271,13 +275,13 @@ export function AvailabilityManager() {
         <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-bold">Weekly Schedules</CardTitle>
           <div className="flex items-center gap-2 self-start">
-            <Select value={doctorFilter} onValueChange={setDoctorFilter}>
+            <Select value={lawyerFilter} onValueChange={setLawyerFilter}>
               <SelectTrigger className="w-[180px] h-9">
-                <SelectValue placeholder="All Doctors" />
+                <SelectValue placeholder="All Lawyers" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Doctors</SelectItem>
-                {doctors?.map((doc: any) => (
+                <SelectItem value="all">All Lawyers</SelectItem>
+                {lawyers?.map((doc) => (
                   <SelectItem key={doc.id} value={doc.id}>
                     {doc.name}
                   </SelectItem>
@@ -290,7 +294,6 @@ export function AvailabilityManager() {
           </div>
         </CardHeader>
         <CardContent>
-          {/* LOADING & ERROR STATES */}
           {isLoading ? (
             <div className="py-20 text-center flex flex-col items-center gap-3">
               <RefreshCw className="h-8 w-8 animate-spin text-primary" />
@@ -299,35 +302,34 @@ export function AvailabilityManager() {
           ) : isError ? (
             <div className="py-20 text-center text-destructive border border-dashed border-destructive/20 rounded-xl bg-destructive/5">
               <p className="font-semibold">Error loading schedules</p>
-              <p className="text-sm mt-1">{error?.message || "Unknown error occurred"}</p>
+              <p className="text-sm mt-1">{(error as Error)?.message || "Unknown error occurred"}</p>
             </div>
           ) : !filteredAvailability || filteredAvailability.length === 0 ? (
             <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
               <p className="font-semibold">No schedules configured</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Select a doctor and specify working hours on the left.
+                Select a lawyer and specify working hours on the left.
               </p>
             </div>
           ) : (
-            /* TABLE */
             <div className="border border-border rounded-xl overflow-hidden bg-background">
               <div className="w-full overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-secondary/40">
                     <TableRow>
-                      <TableHead>Doctor</TableHead>
+                      <TableHead>Lawyer</TableHead>
                       <TableHead>Weekly Shift</TableHead>
                       <TableHead>Duration</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAvailability.map((avail: any) => (
+                    {filteredAvailability.map((avail) => (
                       <TableRow key={avail.id} className="hover:bg-secondary/25">
                         <TableCell className="py-3.5 font-semibold">
-                          {avail.doctor?.name || "Unknown Doctor"}
+                          {avail.lawyer?.name || "Unknown Lawyer"}
                           <div className="text-xs text-muted-foreground font-normal">
-                            {avail.doctor?.specialization}
+                            {avail.lawyer?.specialization}
                           </div>
                         </TableCell>
                         <TableCell className="py-3.5 text-sm font-medium">
@@ -350,7 +352,7 @@ export function AvailabilityManager() {
                             onClick={() => {
                               setDeleteId(avail.id);
                               setDeleteDetails(
-                                `${avail.doctor?.name || "Doctor"} on ${DAYS_OF_WEEK[avail.day_of_week]}`,
+                                `${avail.lawyer?.name || "Lawyer"} on ${DAYS_OF_WEEK[avail.day_of_week]}`,
                               );
                             }}
                             disabled={removeAvailabilityMutation.isPending}

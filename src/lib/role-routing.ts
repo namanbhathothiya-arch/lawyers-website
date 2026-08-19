@@ -1,4 +1,4 @@
-export type PortalRole = "admin" | "staff" | string | null | undefined;
+export type PortalRole = "admin" | "lawyer" | "staff" | string | null | undefined;
 
 export function getPostLoginPath(role: PortalRole) {
   if (role === "staff") return "/staff";

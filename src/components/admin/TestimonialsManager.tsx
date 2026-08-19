@@ -30,8 +30,10 @@ import {
 
 type TestimonialRow = {
   id: string;
-  patient_name: string;
-  patient_label: string | null;
+  client_name: string;
+  client_label: string | null;
+  patient_name?: string;
+  patient_label?: string | null;
   review: string;
   rating: number;
   image_url: string | null;
@@ -43,8 +45,8 @@ const TESTIMONIALS_TABLE_NAME = "testimonials";
 const TESTIMONIAL_IMAGES_BUCKET = "testimonial-images";
 
 const EMPTY_FORM = {
-  patient_name: "",
-  patient_label: "",
+  client_name: "",
+  client_label: "",
   review: "",
   rating: 5,
   image_url: "",
@@ -136,7 +138,11 @@ export function TestimonialsManager() {
         throw error;
       }
       setSchemaMissing(false);
-      return data || [];
+      return (data || []).map((row) => ({
+        ...row,
+        client_name: row.client_name || row.patient_name || "",
+        client_label: row.client_label || row.patient_label || null,
+      }));
     },
   });
 
@@ -148,7 +154,7 @@ export function TestimonialsManager() {
       if (imageFile) {
         const compressedImage = await compressImage(imageFile);
         const sourceName = imageFile.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_");
-        uploadedPath = `${crypto.randomUUID()}/${sourceName || "patient"}.jpg`;
+        uploadedPath = `${crypto.randomUUID()}/${sourceName || "client"}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from(TESTIMONIAL_IMAGES_BUCKET)
@@ -165,8 +171,8 @@ export function TestimonialsManager() {
       }
 
       const payload = {
-        patient_name: form.patient_name.trim(),
-        patient_label: form.patient_label.trim() || null,
+        client_name: form.client_name.trim(),
+        client_label: form.client_label.trim() || null,
         review: form.review.trim(),
         rating: form.rating,
         image_url: imageUrl,
@@ -238,8 +244,8 @@ export function TestimonialsManager() {
   function openEdit(item: TestimonialRow) {
     setEditing(item);
     setForm({
-      patient_name: item.patient_name,
-      patient_label: item.patient_label || "",
+      client_name: item.client_name || item.patient_name || "",
+      client_label: item.client_label || item.patient_label || "",
       review: item.review,
       rating: item.rating,
       image_url: item.image_url || "",
@@ -255,12 +261,12 @@ export function TestimonialsManager() {
     event.preventDefault();
     if (schemaMissing) {
       toast.error(
-        "The testimonials table is missing from Supabase. Run the new testimonials migration and reload schema cache.",
+        "The testimonials table is missing from Supabase.",
       );
       return;
     }
-    if (!form.patient_name.trim() || !form.review.trim()) {
-      toast.error("Patient name and review are required.");
+    if (!form.client_name.trim() || !form.review.trim()) {
+      toast.error("Client name and review are required.");
       return;
     }
     saveMutation.mutate();
@@ -272,7 +278,7 @@ export function TestimonialsManager() {
         <div>
           <CardTitle className="text-xl font-bold">Manage Testimonials</CardTitle>
           <p className="mt-1 text-sm text-muted-foreground">
-            Curate the patient stories shown on the homepage.
+            Curate the client stories shown on the homepage.
           </p>
         </div>
         <div className="flex gap-2">
@@ -294,23 +300,13 @@ export function TestimonialsManager() {
           <div className="rounded-xl border border-dashed border-destructive/20 bg-destructive/5 py-16 text-center text-destructive">
             <p className="font-semibold">Could not load testimonials</p>
             <p className="mt-1 text-sm">{error?.message}</p>
-            {schemaMissing && (
-              <div className="mx-auto mt-4 max-w-2xl rounded-lg border border-destructive/20 bg-background/80 px-4 py-3 text-left text-sm text-foreground">
-                <p className="font-semibold text-destructive">Missing `public.testimonials`</p>
-                <p className="mt-1 text-muted-foreground">
-                  Apply the testimonials migration in
-                  `supabase/migrations/20260619173000_testimonials.sql` or the repair migration,
-                  then reload the Supabase schema cache.
-                </p>
-              </div>
-            )}
           </div>
         ) : !data?.length ? (
           <div className="rounded-xl border border-dashed border-border bg-secondary/10 py-20 text-center">
             <MessageSquareQuote className="mx-auto h-8 w-8 text-primary" />
             <p className="mt-3 font-semibold">No testimonials yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add your first patient story to replace the homepage sample content.
+              Add your first client story to replace the homepage sample content.
             </p>
           </div>
         ) : (
@@ -329,13 +325,13 @@ export function TestimonialsManager() {
                     />
                   ) : (
                     <div className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 font-bold text-primary">
-                      {item.patient_name.charAt(0)}
+                      {item.client_name.charAt(0)}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-semibold">{item.patient_name}</div>
+                    <div className="truncate font-semibold">{item.client_name}</div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {item.patient_label || "Verified patient"}
+                      {item.client_label || "Verified client"}
                     </div>
                   </div>
                   <span
@@ -369,7 +365,7 @@ export function TestimonialsManager() {
                       onClick={() => openEdit(item)}
                     >
                       <Edit2 className="h-3.5 w-3.5" />
-                      <span className="sr-only">Edit {item.patient_name}</span>
+                      <span className="sr-only">Edit {item.client_name}</span>
                     </Button>
                     <Button
                       variant="destructive"
@@ -378,7 +374,7 @@ export function TestimonialsManager() {
                       onClick={() => setDeleteTarget(item)}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      <span className="sr-only">Delete {item.patient_name}</span>
+                      <span className="sr-only">Delete {item.client_name}</span>
                     </Button>
                   </div>
                 </div>
@@ -395,21 +391,21 @@ export function TestimonialsManager() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label htmlFor="patient-name">Patient name *</Label>
+                  <Label htmlFor="client-name">Client name *</Label>
                   <Input
-                    id="patient-name"
-                    value={form.patient_name}
-                    onChange={(e) => setForm({ ...form, patient_name: e.target.value })}
+                    id="client-name"
+                    value={form.client_name}
+                    onChange={(e) => setForm({ ...form, client_name: e.target.value })}
                     placeholder="e.g. Priya Shah"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="patient-label">Patient label</Label>
+                  <Label htmlFor="client-label">Client label</Label>
                   <Input
-                    id="patient-label"
-                    value={form.patient_label}
-                    onChange={(e) => setForm({ ...form, patient_label: e.target.value })}
-                    placeholder="e.g. Cardiac care patient"
+                    id="client-label"
+                    value={form.client_label}
+                    onChange={(e) => setForm({ ...form, client_label: e.target.value })}
+                    placeholder="e.g. Corporate Law Client"
                   />
                 </div>
               </div>
@@ -421,14 +417,14 @@ export function TestimonialsManager() {
                   maxLength={700}
                   value={form.review}
                   onChange={(e) => setForm({ ...form, review: e.target.value })}
-                  placeholder="Share the patient's experience..."
+                  placeholder="Share the client's experience..."
                 />
                 <div className="text-right text-xs text-muted-foreground">
                   {form.review.length}/700
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Patient profile image</Label>
+                <Label>Client profile image</Label>
                 <div
                   className="flex min-h-36 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-secondary/5 p-4 text-center transition-colors hover:border-primary/50"
                   onClick={() => document.getElementById("testimonial-profile-image")?.click()}
@@ -457,7 +453,7 @@ export function TestimonialsManager() {
                     <div className="flex items-center gap-5">
                       <img
                         src={imagePreview}
-                        alt="Patient profile preview"
+                        alt="Client profile preview"
                         className="h-28 w-28 rounded-full border-4 border-white object-cover object-top shadow-md ring-1 ring-border"
                       />
                       <div className="text-left">
@@ -470,16 +466,13 @@ export function TestimonialsManager() {
                   ) : (
                     <div>
                       <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                      <p className="mt-2 text-sm font-medium">Drag a patient photo here</p>
+                      <p className="mt-2 text-sm font-medium">Drag a client photo here</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         or click to select a JPG, PNG, or WEBP image
                       </p>
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Faces are positioned from the top for a natural circular portrait. Maximum 5 MB.
-                </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -536,7 +529,7 @@ export function TestimonialsManager() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete this testimonial?</AlertDialogTitle>
               <AlertDialogDescription>
-                The patient story from {deleteTarget?.patient_name} will be permanently removed.
+                The client story from {deleteTarget?.client_name} will be permanently removed.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

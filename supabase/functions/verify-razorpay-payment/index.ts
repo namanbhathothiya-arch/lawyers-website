@@ -11,12 +11,16 @@ type VerifyPaymentBody = {
   razorpay_payment_id?: string;
   razorpay_order_id?: string;
   razorpay_signature?: string;
+  lawyer_id?: string;
   doctor_id?: string;
   service_id?: string;
   date?: string;
   time_slot?: string;
+  client_name?: string;
   patient_name?: string;
+  client_phone?: string;
   patient_phone?: string;
+  client_email?: string;
   patient_email?: string;
 };
 
@@ -135,27 +139,36 @@ serve(async (req) => {
       razorpay_payment_id,
       razorpay_order_id,
       razorpay_signature,
+      lawyer_id,
       doctor_id,
       service_id,
       date,
       time_slot,
+      client_name,
       patient_name,
+      client_phone,
       patient_phone,
+      client_email,
       patient_email,
     } = body;
+
+    const targetLawyerId = lawyer_id || doctor_id;
+    const targetClientName = client_name || patient_name;
+    const targetClientPhone = client_phone || patient_phone;
+    const targetClientEmail = client_email || patient_email;
 
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
       return jsonResponse({ error: "Missing required Razorpay parameters" }, 400);
     }
 
     if (
-      !doctor_id ||
+      !targetLawyerId ||
       !service_id ||
       !date ||
       !time_slot ||
-      !patient_name ||
-      !patient_phone ||
-      !patient_email
+      !targetClientName ||
+      !targetClientPhone ||
+      !targetClientEmail
     ) {
       return jsonResponse({ error: "Missing booking details parameters" }, 400);
     }
@@ -190,13 +203,13 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: service, error: serviceError } = await supabaseClient
-      .from("services")
+      .from("legal_services")
       .select("price")
       .eq("id", service_id)
       .single();
 
     if (serviceError || !service) {
-      return jsonResponse({ error: "Service not found." }, 404);
+      return jsonResponse({ error: "Legal Service not found." }, 404);
     }
 
     const expectedAmount = getAmountInPaise(service.price);
@@ -234,21 +247,21 @@ serve(async (req) => {
       return jsonResponse({ error: "Payment is not captured and order is not fully paid." }, 400);
     }
 
-    const { data: mappedDoctors, error: mappingError } = await supabaseClient
-      .from("doctor_services")
-      .select("doctor_id")
+    const { data: mappedLawyers, error: mappingError } = await supabaseClient
+      .from("lawyer_services")
+      .select("lawyer_id")
       .eq("service_id", service_id);
 
     if (mappingError) {
       throw mappingError;
     }
 
-    if (mappedDoctors.length > 0 && !mappedDoctors.some((row) => row.doctor_id === doctor_id)) {
-      return jsonResponse({ error: "Selected doctor is not mapped to selected service." }, 400);
+    if (mappedLawyers.length > 0 && !mappedLawyers.some((row) => row.lawyer_id === targetLawyerId)) {
+      return jsonResponse({ error: "Selected lawyer is not mapped to selected legal service." }, 400);
     }
 
-    const { data: existingAppt, error: checkError } = await supabaseClient
-      .from("appointments")
+    const { data: existingConsultation, error: checkError } = await supabaseClient
+      .from("consultations")
       .select("id")
       .eq("payment_id", razorpay_payment_id)
       .maybeSingle();
@@ -257,18 +270,18 @@ serve(async (req) => {
       throw checkError;
     }
 
-    if (existingAppt) {
+    if (existingConsultation) {
       return jsonResponse({
         success: true,
-        message: "Appointment already created.",
-        id: existingAppt.id,
+        message: "Consultation already created.",
+        id: existingConsultation.id,
       });
     }
 
     const { data: activeSlot, error: slotCheckError } = await supabaseClient
-      .from("appointments")
+      .from("consultations")
       .select("id")
-      .eq("doctor_id", doctor_id)
+      .eq("lawyer_id", targetLawyerId)
       .eq("date", date)
       .eq("time_slot", time_slot)
       .neq("status", "cancelled")
@@ -297,17 +310,17 @@ serve(async (req) => {
       );
     }
 
-    const { data: newAppt, error: insertError } = await supabaseClient
-      .from("appointments")
+    const { data: newConsultation, error: insertError } = await supabaseClient
+      .from("consultations")
       .insert([
         {
-          doctor_id,
+          lawyer_id: targetLawyerId,
           service_id,
           date,
           time_slot,
-          patient_name,
-          patient_phone,
-          patient_email,
+          client_name: targetClientName,
+          client_phone: targetClientPhone,
+          client_email: targetClientEmail,
           status: "booked",
           payment_status: "paid",
           payment_id: razorpay_payment_id,
@@ -324,7 +337,7 @@ serve(async (req) => {
           expectedAmount,
           keyId,
           keySecret,
-          "Slot conflict during appointment insert",
+          "Slot conflict during consultation insert",
         );
         return jsonResponse(
           {
@@ -341,8 +354,8 @@ serve(async (req) => {
 
     return jsonResponse({
       success: true,
-      message: "Payment verified and appointment created successfully.",
-      id: newAppt.id,
+      message: "Payment verified and consultation created successfully.",
+      id: newConsultation.id,
     });
   } catch (error: unknown) {
     const message =

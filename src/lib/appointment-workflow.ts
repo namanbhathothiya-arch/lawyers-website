@@ -1,6 +1,6 @@
-export type UserRole = "admin" | "staff";
+export type UserRole = "admin" | "lawyer" | "staff";
 
-export type AppointmentStatus =
+export type ConsultationStatus =
   | "pending_payment"
   | "booked"
   | "confirmed"
@@ -9,18 +9,27 @@ export type AppointmentStatus =
   | "cancelled"
   | "no_show";
 
-export type AppointmentWorkflowRecord = {
-  patient_name: string;
-  patient_phone: string;
-  patient_email: string;
-  status: AppointmentStatus;
+export type AppointmentStatus = ConsultationStatus;
+
+export type ConsultationWorkflowRecord = {
+  client_name: string;
+  client_phone: string;
+  client_email: string;
+  patient_name?: string;
+  patient_phone?: string;
+  patient_email?: string;
+  status: ConsultationStatus;
   date: string;
+  lawyer_id?: string;
   doctor_id?: string;
 };
 
-export type AppointmentView = "all" | "today" | "upcoming" | "search";
+export type AppointmentWorkflowRecord = ConsultationWorkflowRecord;
 
-export const APPOINTMENT_STATUSES: Array<{ value: AppointmentStatus; label: string }> = [
+export type ConsultationView = "all" | "today" | "upcoming" | "search";
+export type AppointmentView = ConsultationView;
+
+export const CONSULTATION_STATUSES: Array<{ value: ConsultationStatus; label: string }> = [
   { value: "pending_payment", label: "Pending Payment" },
   { value: "booked", label: "Booked" },
   { value: "confirmed", label: "Confirmed" },
@@ -30,9 +39,11 @@ export const APPOINTMENT_STATUSES: Array<{ value: AppointmentStatus; label: stri
   { value: "no_show", label: "No Show" },
 ];
 
-export function getAppointmentTransitionOptions(
-  status: AppointmentStatus,
-): Array<{ status: AppointmentStatus; label: string }> {
+export const APPOINTMENT_STATUSES = CONSULTATION_STATUSES;
+
+export function getConsultationTransitionOptions(
+  status: ConsultationStatus,
+): Array<{ status: ConsultationStatus; label: string }> {
   switch (status) {
     case "pending_payment":
       return [
@@ -59,61 +70,85 @@ export function getAppointmentTransitionOptions(
   }
 }
 
-export function appointmentMatchesSearch(appointment: AppointmentWorkflowRecord, term: string) {
+export const getAppointmentTransitionOptions = getConsultationTransitionOptions;
+
+export function consultationMatchesSearch(consultation: ConsultationWorkflowRecord, term: string) {
   const normalizedTerm = term.trim().toLowerCase();
   if (!normalizedTerm) return true;
 
+  const clientName = consultation.client_name || consultation.patient_name || "";
+  const clientEmail = consultation.client_email || consultation.patient_email || "";
+  const clientPhone = consultation.client_phone || consultation.patient_phone || "";
+
   return (
-    appointment.patient_name.toLowerCase().includes(normalizedTerm) ||
-    appointment.patient_email.toLowerCase().includes(normalizedTerm) ||
-    appointment.patient_phone.toLowerCase().includes(normalizedTerm)
+    clientName.toLowerCase().includes(normalizedTerm) ||
+    clientEmail.toLowerCase().includes(normalizedTerm) ||
+    clientPhone.toLowerCase().includes(normalizedTerm)
   );
 }
 
-export function filterAppointments<TAppointment extends AppointmentWorkflowRecord>(
-  appointments: TAppointment[],
+export const appointmentMatchesSearch = consultationMatchesSearch;
+
+export function filterConsultations<TConsultation extends ConsultationWorkflowRecord>(
+  consultations: TConsultation[],
   options: {
-    view: AppointmentView;
+    view: ConsultationView;
     today: string;
     searchTerm?: string;
     statusFilter?: string;
+    lawyerFilter?: string;
     doctorFilter?: string;
     dateFilter?: string;
   },
 ) {
-  return appointments.filter((appointment) => {
-    const matchesSearch = appointmentMatchesSearch(appointment, options.searchTerm || "");
+  const targetLawyerFilter = options.lawyerFilter || options.doctorFilter;
+  return consultations.filter((consultation) => {
+    const matchesSearch = consultationMatchesSearch(consultation, options.searchTerm || "");
     const matchesStatus =
       !options.statusFilter ||
       options.statusFilter === "all" ||
-      appointment.status === options.statusFilter;
-    const matchesDoctor =
-      !options.doctorFilter ||
-      options.doctorFilter === "all" ||
-      appointment.doctor_id === options.doctorFilter;
-    const matchesDate = !options.dateFilter || appointment.date === options.dateFilter;
+      consultation.status === options.statusFilter;
+    const targetLawyer = consultation.lawyer_id || consultation.doctor_id;
+    const matchesLawyer =
+      !targetLawyerFilter ||
+      targetLawyerFilter === "all" ||
+      targetLawyer === targetLawyerFilter;
+    const matchesDate = !options.dateFilter || consultation.date === options.dateFilter;
     const matchesView =
       options.view === "today"
-        ? appointment.date === options.today
+        ? consultation.date === options.today
         : options.view === "upcoming"
-          ? appointment.date >= options.today &&
-            appointment.status !== "completed" &&
-            appointment.status !== "cancelled" &&
-            appointment.status !== "no_show"
+          ? consultation.date >= options.today &&
+            consultation.status !== "completed" &&
+            consultation.status !== "cancelled" &&
+            consultation.status !== "no_show"
           : true;
 
-    return matchesSearch && matchesStatus && matchesDoctor && matchesDate && matchesView;
+    return matchesSearch && matchesStatus && matchesLawyer && matchesDate && matchesView;
   });
 }
 
+export const filterAppointments = filterConsultations;
+
 export function getVisibleAdminTabs(role: UserRole) {
   if (role === "staff") {
-    return ["today", "appointments", "search"] as const;
+    return ["today", "appointments", "consultations", "search"] as const;
   }
 
-  return ["dashboard", "appointments", "doctors", "services", "availability", "holidays"] as const;
+  return [
+    "dashboard",
+    "appointments",
+    "consultations",
+    "lawyers",
+    "doctors",
+    "services",
+    "availability",
+    "holidays",
+  ] as const;
 }
 
-export function canManageClinicSettings(role: UserRole) {
+export function canManageFirmSettings(role: UserRole) {
   return role === "admin";
 }
+
+export const canManageClinicSettings = canManageFirmSettings;

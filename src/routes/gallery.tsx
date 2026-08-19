@@ -1,54 +1,53 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { ClinicGallery } from "@/components/ClinicGallery";
+import { LAW_FIRM } from "@/lib/clinic-data";
 
 export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
-      { title: "Clinic Gallery — HeartCare Advanced Clinic" },
+      { title: `Firm & Chambers Gallery — ${LAW_FIRM.name}` },
       {
         name: "description",
-        content:
-          "View photos of HeartCare Advanced Clinic's consultation rooms, patient spaces, and modern medical facilities.",
+        content: `View photos of ${LAW_FIRM.name}'s chambers, consultation rooms, client spaces, and legal facilities.`,
       },
-      { property: "og:title", content: "Clinic Gallery — HeartCare Advanced Clinic" },
+      { property: "og:title", content: `Firm & Chambers Gallery — ${LAW_FIRM.name}` },
       {
         property: "og:description",
-        content:
-          "Explore the consultation rooms, patient spaces, and modern facilities at HeartCare Advanced Clinic.",
+        content: `Explore the chambers, consultation rooms, client spaces, and legal facilities at ${LAW_FIRM.name}.`,
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://heartcareclinic.com/gallery" },
     ],
-    links: [{ rel: "canonical", href: "https://heartcareclinic.com/gallery" }],
+    links: [{ rel: "canonical", href: "https://sharmalaw.in/gallery" }],
   }),
   component: GalleryPage,
 });
 
 function GalleryPage() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-      <Link
-        to="/"
-        hash="gallery"
-        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition hover:border-primary/25 hover:text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to home
-      </Link>
+    <main className="bg-[#070c14] text-slate-100 min-h-screen">
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+        <Link
+          to="/"
+          hash="gallery"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 text-sm font-semibold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4 text-blue-400" aria-hidden="true" />
+          Back to Home
+        </Link>
 
-      <div className="mt-8 max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Our Clinic</p>
-        <h1 className="mt-3 text-4xl font-bold sm:text-5xl">All clinic photos</h1>
-        <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
-          Explore our consultation rooms, patient spaces, and modern medical facilities. Select any
-          photo to view it full screen.
-        </p>
-      </div>
+        <div className="mt-8 max-w-3xl">
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-400">Chambers & Offices</p>
+          <h1 className="mt-3 font-serif text-4xl font-bold text-white sm:text-5xl">Firm Chambers Gallery</h1>
+          <p className="mt-4 text-base leading-relaxed text-slate-300 sm:text-lg">
+            Explore our legal chambers, conference rooms, client reception, and legal research facilities. Select any photo for full-screen view.
+          </p>
+        </div>
 
-      <div className="mt-10">
-        <ClinicGallery showAll />
-      </div>
-    </section>
+        <div className="mt-10">
+          <ClinicGallery showAll />
+        </div>
+      </section>
+    </main>
   );
 }

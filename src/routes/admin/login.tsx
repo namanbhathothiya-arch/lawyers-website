@@ -13,8 +13,8 @@ import { getPostLoginPath } from "@/lib/role-routing";
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
     meta: [
-      { title: "Admin Login — HeartCare Advanced Clinic" },
-      { name: "description", content: "Sign in to the HeartCare Advanced Clinic admin panel." },
+      { title: "Admin Login — [FIRM NAME]" },
+      { name: "description", content: "Sign in to the [FIRM NAME] admin panel." },
     ],
   }),
   component: AdminLoginPage,
@@ -120,7 +120,7 @@ function AdminLoginPage() {
           <div className="mx-auto h-12 w-12 rounded-2xl bg-primary text-primary-foreground grid place-items-center mb-4">
             <Stethoscope className="h-6 w-6" />
           </div>
-          <CardTitle className="text-2xl font-bold">Clinic Portal</CardTitle>
+          <CardTitle className="text-2xl font-bold">Law Firm Portal</CardTitle>
           <CardDescription>Admins and staff sign in with email and password.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +130,7 @@ function AdminLoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@advancedcare.com"
+                placeholder="admin@lawfirm.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={submitting}

@@ -41,35 +41,49 @@ export function generateSlotsFromAvailability(
   return slots;
 }
 
-export type DoctorLike = {
+export type LawyerLike = {
   id: string;
 };
 
-export function getDoctorsForService<TDoctor extends DoctorLike>(
-  doctors: TDoctor[],
-  mappedDoctorIds: string[] | undefined,
-): TDoctor[] {
-  if (!mappedDoctorIds || mappedDoctorIds.length === 0) {
-    return doctors;
+export type DoctorLike = LawyerLike;
+
+export function getLawyersForService<TLawyer extends LawyerLike>(
+  lawyers: TLawyer[],
+  mappedLawyerIds: string[] | undefined,
+): TLawyer[] {
+  if (!mappedLawyerIds || mappedLawyerIds.length === 0) {
+    return lawyers;
   }
 
-  return doctors.filter((doctor) => mappedDoctorIds.includes(doctor.id));
+  return lawyers.filter((lawyer) => mappedLawyerIds.includes(lawyer.id));
 }
 
-export function canBookDoctorForService(
-  doctorId: string,
+export const getDoctorsForService = getLawyersForService;
+
+export function canBookLawyerForService(
+  lawyerId: string,
   serviceId: string,
-  mappedDoctorIds: string[] | undefined,
+  mappedLawyerIds: string[] | undefined,
 ): boolean {
-  if (!doctorId || !serviceId) {
+  if (!lawyerId || !serviceId) {
     return false;
   }
 
-  if (!mappedDoctorIds || mappedDoctorIds.length === 0) {
+  if (!mappedLawyerIds || mappedLawyerIds.length === 0) {
     return true;
   }
 
-  return mappedDoctorIds.includes(doctorId);
+  return mappedLawyerIds.includes(lawyerId);
+}
+
+export const canBookDoctorForService = canBookLawyerForService;
+
+export function resetLawyerSelectionForServiceChange() {
+  return {
+    lawyer: "",
+    doctor: "",
+    slot: "",
+  };
 }
 
 export function resetDoctorSelectionForServiceChange() {

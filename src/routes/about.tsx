@@ -1,106 +1,97 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ShieldCheck, HeartPulse, Award, Users } from "lucide-react";
-import { CLINIC } from "@/lib/clinic-data";
+import { ShieldCheck, Award, Users, Scale } from "lucide-react";
+import { LAW_FIRM } from "@/lib/clinic-data";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — HeartCare Advanced Clinic" },
+      { title: `About Us — ${LAW_FIRM.name}` },
       {
         name: "description",
-        content:
-          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
+        content: `Learn about ${LAW_FIRM.name} and our strategic approach to corporate, civil, and legal representation.`,
       },
-      { property: "og:title", content: "About — HeartCare Advanced Clinic" },
+      { property: "og:title", content: `About Us — ${LAW_FIRM.name}` },
       {
         property: "og:description",
-        content:
-          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
+        content: `Learn about ${LAW_FIRM.name} and our strategic approach to corporate, civil, and legal representation.`,
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://heartcareclinic.com/about" },
-      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "About — HeartCare Advanced Clinic" },
-      {
-        name: "twitter:description",
-        content:
-          "Learn about HeartCare Advanced Clinic and Dr. Raj Sharma's compassionate approach to advanced cardiac care.",
-      },
-      { name: "twitter:image", content: "https://heartcareclinic.com/og-image.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://heartcareclinic.com/about" }],
+    links: [{ rel: "canonical", href: "https://sharmalaw.in/about" }],
   }),
   component: AboutPage,
 });
 
 function AboutPage() {
   return (
-    <>
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+    <main className="bg-[#070c14] text-slate-100 min-h-screen">
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="max-w-3xl">
-          <div className="text-xs font-semibold uppercase tracking-wider text-primary">
-            About us
+          <div className="text-xs font-bold uppercase tracking-widest text-blue-400">
+            About Our Chambers
           </div>
-          <h1 className="mt-2 text-4xl sm:text-5xl font-bold">
-            Advanced cardiac care with compassion.
+          <h1 className="mt-3 font-serif text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-white">
+            Strategic legal representation for complex matters.
           </h1>
-          <p className="mt-5 text-lg text-muted-foreground">
-            {CLINIC.name} is led by {CLINIC.doctor}, a specialist in {CLINIC.specialization}.
-            We combine advanced cardiac expertise, modern facilities, and attentive consultations
-            to provide clear, compassionate care for every patient.
+          <p className="mt-6 text-base sm:text-lg leading-relaxed text-slate-300">
+            {LAW_FIRM.name} is a premier Indian law firm led by {LAW_FIRM.lawyer}, practicing in {LAW_FIRM.specialization}.
+            We combine deep statutory knowledge, disciplined litigation strategy, and direct advocate accessibility to protect client interests across high-stakes legal disputes.
           </p>
         </div>
 
-        <h2 className="sr-only">Our Core Values</h2>
-        <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="sr-only">Our Core Legal Principles</h2>
+        <div className="mt-16 grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
-              icon: ShieldCheck,
-              t: "Clinical excellence",
-              d: "Evidence-based protocols for advanced cardiac care.",
+              icon: Scale,
+              t: "Legal Rigor",
+              d: "Evidence-backed statutory analysis and meticulous case preparation.",
             },
             {
-              icon: HeartPulse,
-              t: "Patient-first",
-              d: "Listening more, prescribing only what's needed.",
+              icon: ShieldCheck,
+              t: "Client Privilege",
+              d: "Unwavering commitment to absolute confidentiality and professional ethics.",
             },
             {
               icon: Award,
-              t: "Specialist expertise",
-              d: "Interventional cardiology led by Dr. Raj Sharma.",
+              t: "Senior Advocacy",
+              d: "Direct lead advocate involvement across every consultation and court filing.",
             },
-            { icon: Users, t: "Continuity of care", d: "Support through diagnosis, treatment, and follow-up." },
+            {
+              icon: Users,
+              t: "Strategic Counsel",
+              d: "Proactive guidance designed to minimize risk and resolve disputes efficiently.",
+            },
           ].map((v) => (
-            <div key={v.t} className="rounded-2xl border border-border p-6 bg-card">
-              <div className="h-10 w-10 rounded-xl bg-primary-light text-primary grid place-items-center">
+            <div key={v.t} className="rounded-xl border border-slate-800 p-6 bg-[#121b2d] shadow-xl">
+              <div className="h-10 w-10 rounded-lg bg-blue-950 border border-blue-800/40 text-blue-400 grid place-items-center">
                 <v.icon className="h-5 w-5" />
               </div>
-              <h3 className="mt-4 font-semibold">{v.t}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{v.d}</p>
+              <h3 className="mt-4 font-serif text-lg font-bold text-white">{v.t}</h3>
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">{v.d}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <section className="bg-secondary/40 py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12">
+      <section className="border-t border-slate-800/80 bg-[#0b1220] py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-12 lg:gap-16">
           <div>
-            <h2 className="text-3xl font-bold">Our mission</h2>
-            <p className="mt-4 text-muted-foreground">
-              To make advanced cardiac care accessible without compromising compassion, clarity,
-              or time. Every interaction is designed to help patients feel informed and supported.
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">Our Mission</span>
+            <h2 className="mt-2 font-serif text-3xl font-bold text-white">Ethical Advocacy & Results</h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-300">
+              To deliver exceptional legal counsel without compromising integrity, strategic clarity, or personal responsiveness. Every client interaction is handled with the highest level of professional care and commitment.
             </p>
           </div>
           <div>
-            <h2 className="text-3xl font-bold">Our facility</h2>
-            <p className="mt-4 text-muted-foreground">
-              Modern consultation facilities and a patient-focused environment support precise
-              cardiac assessment, treatment planning, and comfortable follow-up care.
+            <span className="text-xs font-bold uppercase tracking-widest text-blue-400">Our Practice</span>
+            <h2 className="mt-2 font-serif text-3xl font-bold text-white">Chambers & Representation</h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-300">
+              Our chambers provide confidential consultation facilities and comprehensive legal support for corporate entities, business owners, and private individuals in district courts, high courts, and tribunals.
             </p>
           </div>
         </div>
       </section>
-    </>
+    </main>
   );
 }

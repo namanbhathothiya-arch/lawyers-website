@@ -5,7 +5,7 @@ import { HolidaysManager } from "@/components/admin/HolidaysManager";
 
 export const Route = createFileRoute("/admin/holidays")({
   head: () => ({
-    meta: [{ title: "Holidays — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Holidays — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>

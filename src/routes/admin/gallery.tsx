@@ -5,11 +5,11 @@ import { GalleryManager } from "@/components/admin/GalleryManager";
 
 export const Route = createFileRoute("/admin/gallery")({
   head: () => ({
-    meta: [{ title: "Clinic Gallery — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Office Gallery — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>
-      <AdminPortalShell title="Clinic Gallery">
+      <AdminPortalShell title="Office Gallery">
         <GalleryManager />
       </AdminPortalShell>
     </AdminGuard>

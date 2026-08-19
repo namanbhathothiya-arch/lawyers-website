@@ -5,11 +5,11 @@ import { AppointmentsManager } from "@/components/admin/AppointmentsManager";
 
 export const Route = createFileRoute("/admin/appointments")({
   head: () => ({
-    meta: [{ title: "Appointments — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Consultations — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>
-      <AdminPortalShell title="Appointments">
+      <AdminPortalShell title="Consultations">
         <AppointmentsManager view="all" role="admin" />
       </AdminPortalShell>
     </AdminGuard>

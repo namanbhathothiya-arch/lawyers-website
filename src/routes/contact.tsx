@@ -4,7 +4,7 @@ import {
   ArrowRight,
   CalendarDays,
   Clock,
-  HeartPulse,
+  Scale,
   Mail,
   MapPin,
   MessageCircle,
@@ -14,44 +14,32 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CLINIC } from "@/lib/clinic-data";
+import { LAW_FIRM } from "@/lib/clinic-data";
 
-const phoneHref = `tel:${CLINIC.phone.replace(/[^\d+]/g, "")}`;
-const emergencyHref = `tel:${CLINIC.emergencyPhone.replace(/[^\d+]/g, "")}`;
-const emailHref = `mailto:${CLINIC.email}`;
-const whatsappHref = `https://wa.me/${CLINIC.whatsapp}`;
+const phoneHref = `tel:${LAW_FIRM.phone.replace(/[^\d+]/g, "")}`;
+const emergencyHref = `tel:${LAW_FIRM.emergencyPhone.replace(/[^\d+]/g, "")}`;
+const emailHref = `mailto:${LAW_FIRM.email}`;
+const whatsappHref = `https://wa.me/${LAW_FIRM.whatsapp}`;
 const directionsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-  CLINIC.address,
+  LAW_FIRM.address,
 )}`;
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — HeartCare Advanced Clinic" },
+      { title: `Contact — ${LAW_FIRM.name}` },
       {
         name: "description",
-        content:
-          "Call, email, or visit HeartCare Advanced Clinic for cardiac appointments and queries.",
+        content: `Call, email, or visit ${LAW_FIRM.name} for advocate consultations and legal queries.`,
       },
-      { property: "og:title", content: "Contact — HeartCare Advanced Clinic" },
+      { property: "og:title", content: `Contact — ${LAW_FIRM.name}` },
       {
         property: "og:description",
-        content:
-          "Call, email, or visit HeartCare Advanced Clinic for cardiac appointments and queries.",
+        content: `Call, email, or visit ${LAW_FIRM.name} for advocate consultations and legal queries.`,
       },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://heartcareclinic.com/contact" },
-      { property: "og:image", content: "https://heartcareclinic.com/og-image.jpg" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Contact — HeartCare Advanced Clinic" },
-      {
-        name: "twitter:description",
-        content:
-          "Call, email, or visit HeartCare Advanced Clinic for cardiac appointments and queries.",
-      },
-      { name: "twitter:image", content: "https://heartcareclinic.com/og-image.jpg" },
     ],
-    links: [{ rel: "canonical", href: "https://heartcareclinic.com/contact" }],
+    links: [{ rel: "canonical", href: "https://sharmalaw.in/contact" }],
   }),
   component: ContactPage,
 });
@@ -59,16 +47,14 @@ export const Route = createFileRoute("/contact")({
 function ContactPage() {
   const contactSchema = {
     "@context": "https://schema.org",
-    "@type": "MedicalClinic",
-    name: CLINIC.name,
-    image: "https://heartcareclinic.com/og-image.jpg",
-    telephone: CLINIC.phone,
-    email: CLINIC.email,
-    url: "https://heartcareclinic.com/contact",
+    "@type": "LegalService",
+    name: LAW_FIRM.name,
+    telephone: LAW_FIRM.phone,
+    email: LAW_FIRM.email,
+    url: "https://sharmalaw.in/contact",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "123 Medical Plaza",
-      addressLocality: "New Delhi",
+      streetAddress: LAW_FIRM.address,
       addressCountry: "IN",
     },
     openingHoursSpecification: [
@@ -82,38 +68,38 @@ function ContactPage() {
   };
 
   return (
-    <main className="relative isolate overflow-hidden">
+    <main className="relative isolate overflow-hidden bg-[#070c14] text-slate-100 min-h-screen">
       <script type="application/ld+json">{JSON.stringify(contactSchema)}</script>
 
-      <section className="relative border-b border-primary/10 bg-[linear-gradient(135deg,oklch(0.985_0.012_230),white_54%,oklch(0.96_0.04_205))]">
-        <div className="absolute -left-24 top-8 -z-10 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -right-24 bottom-0 -z-10 h-80 w-80 rounded-full bg-accent/80 blur-3xl" />
+      {/* HERO HEADER */}
+      <section className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#09101d] to-[#070c14]">
+        <div className="absolute -left-24 top-8 -z-10 h-72 w-72 rounded-full bg-blue-600/10 blur-3xl" />
+        <div className="absolute -right-24 bottom-0 -z-10 h-80 w-80 rounded-full bg-blue-900/15 blur-3xl" />
 
-        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1fr_auto] lg:items-end lg:px-8 lg:py-24">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_auto] lg:items-end lg:px-8 lg:py-24">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/75 px-3.5 py-2 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-primary shadow-sm backdrop-blur">
-              <HeartPulse className="h-3.5 w-3.5" aria-hidden="true" />
-              Contact HeartCare
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400 shadow-sm backdrop-blur">
+              <Scale className="h-3.5 w-3.5" aria-hidden="true" />
+              Contact Our Law Chambers
             </div>
-            <h1 className="hero-display mt-6 text-5xl leading-[0.98] text-foreground sm:text-6xl lg:text-7xl">
-              We’re here when your <span className="text-primary">heart needs answers.</span>
+            <h1 className="hero-display mt-6 font-serif text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
+              We’re here when your <span className="text-blue-500">matter needs action.</span>
             </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">
-              Call, email, message, or visit us. Every contact path is designed to get you the right
-              help quickly and clearly.
+            <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
+              Call, email, message, or visit our chambers. Every contact channel is monitored to connect you with senior legal counsel promptly.
             </p>
           </div>
 
-          <div className="rounded-3xl border border-white/70 bg-white/80 p-5 shadow-[0_24px_70px_-42px_rgba(16,45,75,0.65)] backdrop-blur">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 shadow-2xl backdrop-blur">
             <div className="flex items-center gap-3">
               <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-success" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
               </span>
               <div>
-                <div className="text-sm font-bold">Appointments open</div>
-                <div className="text-xs text-muted-foreground">
-                  {CLINIC.workingDays} · {CLINIC.workingHours}
+                <div className="text-sm font-bold text-white">Chambers Open for Consultations</div>
+                <div className="text-xs text-slate-400">
+                  {LAW_FIRM.workingDays} · {LAW_FIRM.workingHours}
                 </div>
               </div>
             </div>
@@ -121,29 +107,30 @@ function ContactPage() {
         </div>
       </section>
 
+      {/* ACTION CARDS */}
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <ContactActionCard
             icon={Phone}
-            eyebrow="Call reception"
-            title={CLINIC.phone}
-            description="Tap to call for appointments, rescheduling, or quick clinic queries."
+            eyebrow="Call Chambers"
+            title={LAW_FIRM.phone}
+            description="Direct connection to firm reception for appointments and urgent legal queries."
             href={phoneHref}
-            cta="Call now"
+            cta="Call Now"
           />
           <ContactActionCard
             icon={Mail}
-            eyebrow="Email us"
-            title={CLINIC.email}
-            description="Send reports, questions, or appointment-related requests."
+            eyebrow="Email Us"
+            title={LAW_FIRM.email}
+            description="Send court documents, legal briefs, or consultation inquiries."
             href={emailHref}
-            cta="Send email"
+            cta="Send Email"
           />
           <ContactActionCard
             icon={MessageCircle}
             eyebrow="WhatsApp"
-            title="Chat with clinic"
-            description="Message the care team for appointment help and routine queries."
+            title="Chat with Chambers"
+            description="Quick consultation scheduling and document sharing via WhatsApp."
             href={whatsappHref}
             cta="Open WhatsApp"
             external
@@ -151,82 +138,83 @@ function ContactPage() {
           <ContactActionCard
             icon={Navigation}
             eyebrow="Directions"
-            title={CLINIC.address}
-            description="Open Google Maps and navigate directly to the clinic."
+            title={LAW_FIRM.address}
+            description="Open Google Maps and navigate directly to our legal chambers."
             href={directionsHref}
-            cta="Get directions"
+            cta="Get Directions"
             external
           />
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
+        {/* DETAILS & MAP */}
+        <div className="mt-10 grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
           <div className="grid gap-6">
             <InfoCard
               icon={Clock}
-              eyebrow="Working hours"
-              title="Plan your visit"
-              description="Our team is available for consultations and appointment support during clinic hours."
+              eyebrow="Chambers Hours"
+              title="Plan Your Consultation"
+              description="Our legal advocates are available for in-person and online consultations during working hours."
             >
-              <div className="mt-5 rounded-2xl border border-primary/10 bg-primary-light/45 p-4">
+              <div className="mt-5 rounded-xl border border-slate-800 bg-slate-900/80 p-4">
                 <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm font-semibold text-foreground">
-                    {CLINIC.workingDays}
+                  <span className="text-sm font-medium text-slate-200">
+                    {LAW_FIRM.workingDays}
                   </span>
-                  <span className="text-sm font-bold text-primary">{CLINIC.workingHours}</span>
+                  <span className="text-sm font-bold text-blue-400">{LAW_FIRM.workingHours}</span>
                 </div>
               </div>
-              <div className="mt-4 flex items-start gap-3 text-sm text-muted-foreground">
-                <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>For best availability, book your preferred slot before visiting.</span>
+              <div className="mt-4 flex items-start gap-2.5 text-xs text-slate-400">
+                <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" aria-hidden="true" />
+                <span>For immediate confirmation, book your appointment online prior to visiting.</span>
               </div>
             </InfoCard>
 
             <InfoCard
               icon={AlertTriangle}
-              eyebrow="Emergency contact"
-              title="Need urgent help?"
-              description="For severe chest pain, breathing difficulty, fainting, or stroke-like symptoms, seek emergency care immediately."
+              eyebrow="Urgent Legal Helpline"
+              title="Immediate Legal Crisis?"
+              description="For severe legal emergencies including arrests, police actions, or interim court stays."
               variant="emergency"
             >
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 <Button
                   asChild
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-xl"
                 >
                   <a href={emergencyHref}>
                     <Phone className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Call emergency
+                    Urgent Helpline
                   </a>
                 </Button>
-                <Button asChild variant="outline">
-                  <Link to="/appointment">Book regular visit</Link>
+                <Button asChild variant="outline" className="border-slate-700 bg-slate-900 text-slate-200 rounded-xl">
+                  <Link to="/appointment">Standard Meeting</Link>
                 </Button>
               </div>
             </InfoCard>
           </div>
 
-          <div className="overflow-hidden rounded-[2rem] border border-primary/10 bg-card shadow-[0_30px_90px_-55px_rgba(16,45,75,0.7)]">
-            <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-[#121b2d] shadow-2xl">
+            <div className="flex flex-col gap-4 border-b border-slate-800 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>
-                <div className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-                  Location
+                <div className="text-xs font-bold uppercase tracking-widest text-blue-400">
+                  Location & Map
                 </div>
-                <h2 className="mt-1 text-2xl font-bold">Visit the clinic</h2>
-                <p className="mt-1 max-w-xl text-sm text-muted-foreground">{CLINIC.address}</p>
+                <h2 className="mt-1 font-serif text-2xl font-bold text-white">Visit Our Chambers</h2>
+                <p className="mt-1 max-w-xl text-xs text-slate-400">{LAW_FIRM.address}</p>
               </div>
-              <Button asChild variant="outline" className="rounded-full">
+              <Button asChild variant="outline" className="border-slate-700 bg-slate-900 text-slate-200 rounded-xl text-xs">
                 <a href={directionsHref} target="_blank" rel="noreferrer">
-                  <Navigation className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Directions
+                  <Navigation className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                  Map Directions
                 </a>
               </Button>
             </div>
 
-            <div className="aspect-[4/3] min-h-[320px] w-full sm:aspect-[16/10] lg:h-[calc(100%-116px)] lg:min-h-[520px]">
+            <div className="aspect-[4/3] min-h-[320px] w-full sm:aspect-[16/10] lg:h-[calc(100%-116px)] lg:min-h-[480px]">
               <iframe
-                title={`${CLINIC.name} location map`}
-                src={CLINIC.mapsEmbed}
-                className="h-full w-full"
+                title={`${LAW_FIRM.name} location map`}
+                src={LAW_FIRM.mapsEmbed}
+                className="h-full w-full filter contrast-[1.05]"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 allowFullScreen
@@ -235,29 +223,28 @@ function ContactPage() {
           </div>
         </div>
 
-        <div className="mt-8 rounded-[2rem] bg-[#102d4b] p-6 text-white shadow-[0_24px_70px_-45px_rgba(16,45,75,0.7)] sm:p-8 lg:flex lg:items-center lg:justify-between lg:gap-8">
+        <div className="mt-10 rounded-2xl border border-slate-800 bg-slate-900/90 p-6 text-white shadow-2xl sm:p-8 lg:flex lg:items-center lg:justify-between lg:gap-8">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-white/60">
-              <ShieldCheck className="h-4 w-4 text-[#77dfba]" aria-hidden="true" />
-              Secure patient communication
+            <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-amber-400">
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+              Privileged Advocate Consultation
             </div>
-            <h2 className="mt-3 text-2xl font-bold sm:text-3xl">Have reports or a concern?</h2>
-            <p className="mt-2 text-sm leading-6 text-white/65">
-              Email your reports or call reception. We’ll help you choose the right consultation
-              path.
+            <h2 className="mt-3 font-serif text-2xl font-bold sm:text-3xl">Have legal documents to review?</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-300">
+              Email your case documents or contact our reception. We will assign the appropriate legal specialist for your consultation.
             </p>
           </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:mt-0">
-            <Button asChild size="lg" variant="secondary" className="rounded-full">
-              <a href={emailHref}>Email reports</a>
+            <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl px-6">
+              <a href={emailHref}>Email Documents</a>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="rounded-full border-white/25 bg-white/10 text-white hover:bg-white hover:text-[#102d4b]"
+              className="border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700 rounded-xl px-6"
             >
-              <a href={phoneHref}>Call reception</a>
+              <a href={phoneHref}>Call Reception</a>
             </Button>
           </div>
         </div>
@@ -288,22 +275,22 @@ function ContactActionCard({
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noreferrer" : undefined}
-      className="group flex min-w-0 flex-col rounded-[1.5rem] border border-primary/10 bg-card p-5 shadow-[0_18px_60px_-45px_rgba(16,45,75,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_26px_70px_-45px_rgba(16,45,75,0.75)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group flex min-w-0 flex-col rounded-2xl border border-slate-800 bg-[#121b2d] p-6 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-600/50 hover:shadow-2xl focus-visible:outline-none"
     >
-      <span className="grid h-12 w-12 place-items-center rounded-2xl bg-primary-light text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+      <span className="grid h-12 w-12 place-items-center rounded-xl bg-blue-950 border border-blue-800/40 text-blue-400 transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
-      <span className="mt-5 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+      <span className="mt-5 text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">
         {eyebrow}
       </span>
-      <span className="mt-2 min-w-0 break-words text-lg font-bold leading-6 text-foreground [overflow-wrap:anywhere]">
+      <span className="mt-1.5 min-w-0 font-serif text-lg font-bold leading-snug text-white [overflow-wrap:anywhere]">
         {title}
       </span>
-      <span className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">{description}</span>
-      <span className="mt-5 inline-flex items-center text-sm font-bold text-primary">
+      <span className="mt-2 flex-1 text-xs leading-relaxed text-slate-300">{description}</span>
+      <span className="mt-5 inline-flex items-center text-xs font-bold text-blue-400">
         {cta}
         <ArrowRight
-          className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1"
+          className="ml-1.5 h-3.5 w-3.5 transition-transform group-hover:translate-x-1"
           aria-hidden="true"
         />
       </span>
@@ -332,15 +319,15 @@ function InfoCard({
     <article
       className={
         isEmergency
-          ? "rounded-[2rem] border border-destructive/20 bg-destructive/5 p-6 shadow-sm"
-          : "rounded-[2rem] border border-primary/10 bg-card p-6 shadow-sm"
+          ? "rounded-2xl border border-amber-900/50 bg-amber-950/20 p-6 shadow-xl text-slate-100"
+          : "rounded-2xl border border-slate-800 bg-[#121b2d] p-6 shadow-xl text-slate-100"
       }
     >
       <div
         className={
           isEmergency
-            ? "grid h-12 w-12 place-items-center rounded-2xl bg-destructive/10 text-destructive"
-            : "grid h-12 w-12 place-items-center rounded-2xl bg-primary-light text-primary"
+            ? "grid h-12 w-12 place-items-center rounded-xl bg-amber-950 border border-amber-800/40 text-amber-400"
+            : "grid h-12 w-12 place-items-center rounded-xl bg-blue-950 border border-blue-800/40 text-blue-400"
         }
       >
         <Icon className="h-5 w-5" aria-hidden="true" />
@@ -348,14 +335,14 @@ function InfoCard({
       <div
         className={
           isEmergency
-            ? "mt-5 text-xs font-bold uppercase tracking-[0.18em] text-destructive"
-            : "mt-5 text-xs font-bold uppercase tracking-[0.18em] text-primary"
+            ? "mt-5 text-[0.68rem] font-bold uppercase tracking-widest text-amber-400"
+            : "mt-5 text-[0.68rem] font-bold uppercase tracking-widest text-blue-400"
         }
       >
         {eyebrow}
       </div>
-      <h2 className="mt-2 text-2xl font-bold">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+      <h2 className="mt-1 font-serif text-2xl font-bold text-white">{title}</h2>
+      <p className="mt-2 text-xs leading-relaxed text-slate-300">{description}</p>
       {children}
     </article>
   );

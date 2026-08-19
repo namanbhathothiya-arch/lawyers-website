@@ -14,3 +14,5 @@ export function getDoctorServiceSyncChanges(
     remove: Array.from(current).filter((serviceId) => !selected.has(serviceId)),
   };
 }
+
+export const getLawyerServiceSyncChanges = getDoctorServiceSyncChanges;

@@ -41,12 +41,17 @@ type GalleryImage = {
 };
 
 // Helper to extract file path from public Supabase Storage URL
-function getStoragePathFromUrl(url: string, bucketName = "clinic-gallery"): string | null {
+function getStoragePathFromUrl(url: string, bucketName = "firm-gallery"): string | null {
   url = cleanHeroImageUrl(url);
   const marker = `/public/${bucketName}/`;
-  const index = url.indexOf(marker);
+  const legacyMarker = `/public/clinic-gallery/`;
+  let index = url.indexOf(marker);
   if (index !== -1) {
     return url.substring(index + marker.length);
+  }
+  index = url.indexOf(legacyMarker);
+  if (index !== -1) {
+    return url.substring(index + legacyMarker.length);
   }
   return null;
 }
@@ -198,7 +203,7 @@ export function GalleryManager() {
 
         // Upload to storage
         const { error: uploadError } = await supabase.storage
-          .from("clinic-gallery")
+          .from("firm-gallery")
           .upload(filePath, compressedImage.blob, {
             contentType: compressedImage.contentType,
             upsert: true,
@@ -208,7 +213,7 @@ export function GalleryManager() {
         // Public URL
         const {
           data: { publicUrl },
-        } = supabase.storage.from("clinic-gallery").getPublicUrl(filePath);
+        } = supabase.storage.from("firm-gallery").getPublicUrl(filePath);
 
         // Insert database record
         const payload = {
@@ -283,7 +288,7 @@ export function GalleryManager() {
 
           // Upload new
           const { error: uploadError } = await supabase.storage
-            .from("clinic-gallery")
+            .from("firm-gallery")
             .upload(filePath, compressedImage.blob, {
               contentType: compressedImage.contentType,
               upsert: true,
@@ -293,14 +298,14 @@ export function GalleryManager() {
           // Get new public URL
           const {
             data: { publicUrl },
-          } = supabase.storage.from("clinic-gallery").getPublicUrl(filePath);
+          } = supabase.storage.from("firm-gallery").getPublicUrl(filePath);
 
           updatedImageUrl = publicUrl;
 
           // Delete old storage object to prevent orphans
           const oldPath = getStoragePathFromUrl(editingImage.image_url);
           if (oldPath) {
-            await supabase.storage.from("clinic-gallery").remove([oldPath]);
+            await supabase.storage.from("firm-gallery").remove([oldPath]);
           }
         }
 
@@ -373,7 +378,7 @@ export function GalleryManager() {
         const storagePath = getStoragePathFromUrl(item.image_url);
         if (storagePath) {
           const { error: storageError } = await supabase.storage
-            .from("clinic-gallery")
+            .from("firm-gallery")
             .remove([storagePath]);
           if (storageError) console.error("Storage cleanup failed:", storageError);
         }
@@ -471,9 +476,9 @@ export function GalleryManager() {
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <CardTitle className="text-xl font-bold">Manage Clinic Gallery</CardTitle>
+          <CardTitle className="text-xl font-bold">Manage Office Gallery</CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Upload clinic photos, manage titles and descriptions, and set their display order.
+            Upload office photos, manage titles and descriptions, and set their display order.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -505,7 +510,7 @@ export function GalleryManager() {
           <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
             <p className="font-semibold">No images in gallery</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Click "Add Image" to upload photos of your clinic facilities.
+              Click "Add Image" to upload photos of your office facilities.
             </p>
           </div>
         ) : (
@@ -623,7 +628,7 @@ export function GalleryManager() {
                     id="img-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Equipped with advanced diagnostic tools for accurate cardiac assessment."
+                    placeholder="Equipped with comprehensive legal resources for effective case preparation."
                     rows={4}
                     maxLength={500}
                   />
@@ -771,7 +776,7 @@ export function GalleryManager() {
                     id="edit-description"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Equipped with advanced diagnostic tools for accurate cardiac assessment."
+                    placeholder="Equipped with comprehensive legal resources for effective case preparation."
                     rows={4}
                     maxLength={500}
                   />

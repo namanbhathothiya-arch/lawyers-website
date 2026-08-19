@@ -5,7 +5,7 @@ import { TestimonialsManager } from "@/components/admin/TestimonialsManager";
 
 export const Route = createFileRoute("/admin/testimonials")({
   head: () => ({
-    meta: [{ title: "Testimonials — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Testimonials — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>

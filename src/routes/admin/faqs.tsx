@@ -5,7 +5,7 @@ import { FaqsManager } from "@/components/admin/FaqsManager";
 
 export const Route = createFileRoute("/admin/faqs")({
   head: () => ({
-    meta: [{ title: "FAQs — HeartCare Advanced Clinic" }],
+    meta: [{ title: "FAQs — [FIRM NAME]" }],
   }),
   component: () => (
     <AdminGuard>

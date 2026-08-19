@@ -188,7 +188,7 @@ export function FaqsManager() {
             <HelpCircle className="mx-auto h-8 w-8 text-primary" />
             <p className="mt-3 font-semibold">No FAQs yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add the first question patients often ask.
+              Add the first question clients often ask.
             </p>
           </div>
         ) : filteredFaqs.length === 0 ? (
@@ -283,7 +283,7 @@ export function FaqsManager() {
                   rows={6}
                   value={form.answer}
                   onChange={(event) => setForm({ ...form, answer: event.target.value })}
-                  placeholder="Write a clear, patient-friendly answer..."
+                  placeholder="Write a clear, client-friendly answer..."
                   maxLength={FAQ_ANSWER_MAX_LENGTH}
                 />
                 <div className="text-right text-xs text-muted-foreground">
@@ -297,7 +297,7 @@ export function FaqsManager() {
                     id="faq-category"
                     value={form.category}
                     onChange={(event) => setForm({ ...form, category: event.target.value })}
-                    placeholder="e.g. Appointments"
+                    placeholder="e.g. Consultations"
                     maxLength={80}
                   />
                 </div>

@@ -59,7 +59,7 @@ export function ServicesManager() {
     queryKey: ["admin-services"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("services")
+        .from("legal_services")
         .select("*")
         .order("name", { ascending: true });
       if (error) throw error;
@@ -97,19 +97,20 @@ export function ServicesManager() {
       if (editingService) {
         // Update
         const { error } = await supabase
-          .from("services")
+          .from("legal_services")
           .update(svcPayload)
           .eq("id", editingService.id);
         if (error) throw error;
       } else {
         // Create
-        const { error } = await supabase.from("services").insert([svcPayload]);
+        const { error } = await supabase.from("legal_services").insert([svcPayload]);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-services"] });
       queryClient.invalidateQueries({ queryKey: ["services"] });
+      queryClient.invalidateQueries({ queryKey: ["legal_services"] });
       queryClient.invalidateQueries({ queryKey: ["admin-count"] });
       toast.success(
         editingService ? "Service updated successfully!" : "Service added successfully!",
@@ -124,7 +125,7 @@ export function ServicesManager() {
   // Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("services").delete().eq("id", id);
+      const { error } = await supabase.from("legal_services").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -159,7 +160,7 @@ export function ServicesManager() {
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <CardTitle className="text-xl font-bold">Manage Services</CardTitle>
+        <CardTitle className="text-xl font-bold">Manage Legal Services</CardTitle>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -170,7 +171,7 @@ export function ServicesManager() {
             <RefreshCw className="h-3.5 w-3.5" /> Refresh
           </Button>
           <Button size="sm" onClick={handleAddOpen} className="flex items-center gap-1">
-            <Plus className="h-4 w-4" /> Add Service
+            <Plus className="h-4 w-4" /> Add Legal Service
           </Button>
         </div>
       </CardHeader>
@@ -190,7 +191,7 @@ export function ServicesManager() {
           <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
             <p className="font-semibold">No services registered</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Click "Add Service" to create your first medical service option.
+              Click "Add Legal Service" to create your first legal service option.
             </p>
           </div>
         ) : (
@@ -270,7 +271,7 @@ export function ServicesManager() {
           <DialogContent className="max-w-md bg-background border border-border">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
-                {editingService ? "Edit Service" : "Create New Service"}
+                {editingService ? "Edit Legal Service" : "Create New Legal Service"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSave} className="space-y-4 py-2">
@@ -330,8 +331,8 @@ export function ServicesManager() {
               </AlertDialogTitle>
               <AlertDialogDescription className="text-sm text-muted-foreground">
                 This will permanently delete the service offering{" "}
-                <span className="font-semibold text-foreground">{deleteName}</span>. Patients will
-                no longer be able to select it when booking appointments. This action cannot be
+                <span className="font-semibold text-foreground">{deleteName}</span>. Clients will
+                no longer be able to select it when booking consultations. This action cannot be
                 undone.
               </AlertDialogDescription>
             </AlertDialogHeader>

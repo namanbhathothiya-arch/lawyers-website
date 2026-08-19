@@ -10,7 +10,7 @@ import {
   LogOut,
   Menu,
   CircleHelp,
-  Stethoscope,
+  Scale,
   Users,
   UserCog,
   MessageSquareQuote,
@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 
 const adminNav = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/appointments", label: "Appointments", icon: Calendar },
-  { to: "/admin/doctors", label: "Doctors", icon: Users },
-  { to: "/admin/services", label: "Services", icon: Briefcase },
+  { to: "/admin/appointments", label: "Consultations", icon: Calendar },
+  { to: "/admin/doctors", label: "Lawyers", icon: Users },
+  { to: "/admin/services", label: "Legal Services", icon: Briefcase },
   { to: "/admin/availability", label: "Availability", icon: Clock },
   { to: "/admin/holidays", label: "Holidays", icon: CalendarOff },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
@@ -43,30 +43,30 @@ export function AdminPortalShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex bg-secondary/10 text-foreground relative overflow-x-hidden">
+    <div className="min-h-screen flex bg-[#070c14] text-slate-100 relative overflow-x-hidden">
       {/* Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          className="fixed inset-0 bg-black/70 z-40 md:hidden transition-opacity backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside
         className={cn(
-          "w-64 border-r border-border bg-background flex flex-col transition-transform duration-300 ease-in-out z-50",
+          "w-64 border-r border-slate-800 bg-[#0b1220] flex flex-col transition-transform duration-300 ease-in-out z-50",
           "fixed inset-y-0 left-0 md:sticky md:top-0 md:h-screen md:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
         )}
       >
-        <div className="h-16 px-6 border-b border-border flex items-center gap-2">
-          <span className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
-            <Stethoscope className="h-4.5 w-4.5" />
+        <div className="h-16 px-6 border-b border-slate-800 flex items-center gap-3">
+          <span className="h-8 w-8 rounded-lg bg-blue-600 text-white grid place-items-center shadow-md">
+            <Scale className="h-4.5 w-4.5" />
           </span>
-          <span className="font-bold text-sm leading-tight tracking-tight">Admin Console</span>
+          <span className="font-serif font-bold text-sm leading-tight text-white">Admin Console</span>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {adminNav.map((item) => {
             const isActive =
               item.to === "/admin"
@@ -78,10 +78,10 @@ export function AdminPortalShell({
                 to={item.to}
                 onClick={() => setSidebarOpen(false)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                  "w-full flex items-center gap-3 px-3.5 py-3 md:py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
+                    ? "bg-blue-600 text-white shadow-md font-semibold"
+                    : "text-slate-400 hover:bg-slate-800/80 hover:text-white",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -91,10 +91,10 @@ export function AdminPortalShell({
           })}
         </nav>
 
-        <div className="p-4 border-t border-border bg-background">
+        <div className="p-4 border-t border-slate-800 bg-[#080d17]">
           <button
             onClick={() => signOut()}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-400 hover:bg-red-950/30 transition-colors"
           >
             <LogOut className="h-4 w-4" />
             <span>Sign Out</span>
@@ -102,27 +102,27 @@ export function AdminPortalShell({
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-y-auto">
-        <header className="h-16 px-4 md:px-8 border-b border-border bg-background/80 backdrop-blur flex items-center justify-between sticky top-0 z-10">
+      <main className="flex-1 flex flex-col overflow-y-auto min-w-0">
+        <header className="h-16 px-4 md:px-8 border-b border-slate-800 bg-[#070c14]/90 backdrop-blur-md flex items-center justify-between sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="w-11 h-11 flex items-center justify-center -ml-2 rounded-md hover:bg-secondary/50 md:hidden"
+              className="w-10 h-10 flex items-center justify-center -ml-2 rounded-lg border border-slate-800 hover:bg-slate-800 md:hidden"
               aria-label="Open sidebar"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-slate-200" />
             </button>
-            <h2 className="font-semibold text-lg">{title}</h2>
+            <h2 className="font-serif font-bold text-lg text-white">{title}</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2.5 py-1 rounded-full bg-primary/15 text-primary font-semibold capitalize">
+          <div className="flex items-center gap-3">
+            <span className="text-xs px-3 py-1 rounded-full border border-blue-500/30 bg-blue-950/80 text-blue-400 font-semibold capitalize">
               {role}
             </span>
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
+            <span className="text-xs text-slate-400 hidden sm:inline">{user?.email}</span>
           </div>
         </header>
 
-        <div className="flex-1 p-4 md:p-8 animate-fade-in">{children}</div>
+        <div className="flex-1 p-4 md:p-8">{children}</div>
       </main>
     </div>
   );

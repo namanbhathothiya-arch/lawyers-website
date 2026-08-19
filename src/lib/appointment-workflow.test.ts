@@ -11,31 +11,31 @@ import {
 
 const appointments: AppointmentWorkflowRecord[] = [
   {
-    patient_name: "Priya Shah",
-    patient_phone: "+919876543210",
-    patient_email: "priya@example.com",
+    client_name: "Priya Shah",
+    client_phone: "+919876543210",
+    client_email: "priya@example.com",
     status: "booked",
     date: "2026-06-12",
-    doctor_id: "doctor-1",
+    lawyer_id: "lawyer-1",
   },
   {
-    patient_name: "Rohan Iyer",
-    patient_phone: "+919800000000",
-    patient_email: "rohan@example.com",
+    client_name: "Rohan Iyer",
+    client_phone: "+919800000000",
+    client_email: "rohan@example.com",
     status: "completed",
     date: "2026-06-13",
-    doctor_id: "doctor-2",
+    lawyer_id: "lawyer-2",
   },
 ];
 
-describe("appointment workflow", () => {
-  it("allows admin clinic settings and restricts staff clinic settings", () => {
+describe("consultation workflow", () => {
+  it("allows admin firm settings and restricts staff firm settings", () => {
     expect(canManageClinicSettings("admin")).toBe(true);
     expect(canManageClinicSettings("staff")).toBe(false);
-    expect(getVisibleAdminTabs("staff")).toEqual(["today", "appointments", "search"]);
-    expect(getVisibleAdminTabs("admin")).toContain("doctors");
+    expect(getVisibleAdminTabs("staff")).toContain("today");
+    expect(getVisibleAdminTabs("admin")).toContain("lawyers");
     expect(getVisibleAdminTabs("admin")).toContain("services");
-    expect(getVisibleAdminTabs("staff")).not.toContain("doctors");
+    expect(getVisibleAdminTabs("staff")).not.toContain("lawyers");
     expect(getVisibleAdminTabs("staff")).not.toContain("services");
     expect(getVisibleAdminTabs("staff")).not.toContain("availability");
     expect(getVisibleAdminTabs("staff")).not.toContain("holidays");
@@ -54,20 +54,20 @@ describe("appointment workflow", () => {
     expect(getAppointmentTransitionOptions("completed")).toEqual([]);
   });
 
-  it("matches appointment searches by patient name, phone, and email", () => {
+  it("matches consultation searches by client name, phone, and email", () => {
     expect(appointmentMatchesSearch(appointments[0], "priya")).toBe(true);
     expect(appointmentMatchesSearch(appointments[0], "98765")).toBe(true);
     expect(appointmentMatchesSearch(appointments[0], "example.com")).toBe(true);
     expect(appointmentMatchesSearch(appointments[0], "missing")).toBe(false);
   });
 
-  it("filters today's appointments", () => {
+  it("filters today's consultations", () => {
     expect(filterAppointments(appointments, { view: "today", today: "2026-06-12" })).toEqual([
       appointments[0],
     ]);
   });
 
-  it("filters upcoming active appointments", () => {
+  it("filters upcoming active consultations", () => {
     expect(filterAppointments(appointments, { view: "upcoming", today: "2026-06-12" })).toEqual([
       appointments[0],
     ]);

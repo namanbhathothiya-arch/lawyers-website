@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { ChevronDown, Mail, MapPin, Phone } from "lucide-react";
+import { ChevronDown, Mail, MapPin, Phone, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/carousel";
 import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ImageCarousel } from "@/components/ImageCarousel";
-import { CLINIC } from "@/lib/clinic-data";
+import { LAW_FIRM } from "@/lib/clinic-data";
 import { getServiceImageList } from "@/lib/image-lists";
 import { type DBService, useDoctors, useServices } from "@/hooks/use-supabase-data";
 
@@ -41,21 +41,21 @@ export function HomeDeferredSections() {
     <>
       <section
         id="gallery"
-        className="mx-auto max-w-7xl scroll-mt-20 border-b border-border px-4 py-20 sm:px-6 lg:px-8"
+        className="mx-auto max-w-7xl scroll-mt-20 border-b border-slate-800/80 px-4 py-20 sm:px-6 lg:px-8"
       >
         <SectionHeader
-          eyebrow="Our Clinic"
-          title="Clinic Gallery"
-          subtitle="Explore our modern facilities, consultation rooms, waiting lounge, and advanced medical equipment."
+          eyebrow="Our Firm Chambers"
+          title="Chambers & Office Gallery"
+          subtitle="Explore our legal chambers, consultation rooms, conference hall, and research facilities."
         />
         <ClinicGallery />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <SectionHeader
-          eyebrow="Our team"
-          title="Meet our featured doctors"
-          subtitle="A multi-disciplinary team committed to your long-term health."
+          eyebrow="Senior Counsel"
+          title="Meet Our Featured Advocates"
+          subtitle="Experienced legal practitioners committed to strategic representation and client success."
         />
 
         {loadingDoctors ? (
@@ -64,8 +64,8 @@ export function HomeDeferredSections() {
           <ErrorState message={docError?.message || "Unknown error"} retry={refetchDoctors} />
         ) : !doctors || doctors.length === 0 ? (
           <EmptyState
-            title="No doctors found"
-            description="There are no doctors registered in the database yet. Please configure them in the admin dashboard."
+            title="No lawyers found"
+            description="There are no lawyers registered in the database yet. Please configure them in the admin dashboard."
           />
         ) : (
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -75,19 +75,19 @@ export function HomeDeferredSections() {
           </div>
         )}
 
-        <div className="mt-8 text-center">
-          <Button asChild variant="outline">
-            <Link to="/doctors">View all doctors</Link>
+        <div className="mt-10 text-center">
+          <Button asChild variant="outline" className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-xl px-6">
+            <Link to="/doctors">View All Lawyers</Link>
           </Button>
         </div>
       </section>
 
-      <section className="bg-secondary/40 py-20">
+      <section className="bg-[#0b1220] py-20 border-y border-slate-800/80">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeader
-            eyebrow="Services"
-            title="Care designed around you"
-            subtitle="From routine check-ups to specialist consultations - transparent pricing, every time."
+            eyebrow="Practice Areas"
+            title="Legal Solutions Designed Around You"
+            subtitle="From strategic legal advice to full litigation representation — transparent fee structure, every time."
           />
 
           {loadingServices ? (
@@ -96,7 +96,7 @@ export function HomeDeferredSections() {
             <ErrorState message={svcError?.message || "Unknown error"} retry={refetchServices} />
           ) : !services || services.length === 0 ? (
             <EmptyState
-              title="No services found"
+              title="No legal services found"
               description="There are no services registered in the database yet. Please configure them in the admin dashboard."
             />
           ) : (
@@ -112,16 +112,16 @@ export function HomeDeferredSections() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <div className="mt-6 flex items-center justify-center gap-3">
-                <CarouselPrevious className="static h-10 w-10 translate-y-0 border-primary/20 bg-white/85 text-primary shadow-sm backdrop-blur hover:bg-primary hover:text-primary-foreground" />
-                <CarouselNext className="static h-10 w-10 translate-y-0 border-primary/20 bg-white/85 text-primary shadow-sm backdrop-blur hover:bg-primary hover:text-primary-foreground" />
+              <div className="mt-8 flex items-center justify-center gap-3">
+                <CarouselPrevious className="static h-10 w-10 translate-y-0 border-slate-700 bg-slate-900 text-slate-200 hover:bg-blue-600 hover:text-white" />
+                <CarouselNext className="static h-10 w-10 translate-y-0 border-slate-700 bg-slate-900 text-slate-200 hover:bg-blue-600 hover:text-white" />
               </div>
             </Carousel>
           )}
 
-          <div className="mt-8 text-center">
-            <Button asChild variant="outline">
-              <Link to="/services">All services</Link>
+          <div className="mt-10 text-center">
+            <Button asChild variant="outline" className="border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 rounded-xl px-6">
+              <Link to="/services">Explore All Practice Areas</Link>
             </Button>
           </div>
         </div>
@@ -130,26 +130,34 @@ export function HomeDeferredSections() {
       <FAQSection />
       <TestimonialsSection />
 
+      {/* CTA BANNER */}
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-8 rounded-3xl bg-primary p-10 text-primary-foreground lg:grid-cols-2 lg:p-14">
+        <div className="grid items-center gap-8 rounded-2xl border border-slate-800 bg-gradient-to-r from-blue-950 via-[#101828] to-slate-900 p-8 text-white shadow-2xl lg:grid-cols-2 lg:p-12">
           <div>
-            <h2 className="text-3xl font-bold lg:text-4xl">Ready to see a doctor?</h2>
-            <p className="mt-3 max-w-lg text-primary-foreground/80">
-              Book online in under a minute. We'll confirm your slot instantly.
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400">Direct Consultation</span>
+            <h2 className="mt-2 font-serif text-3xl font-bold text-white lg:text-4xl">Ready to consult an advocate?</h2>
+            <p className="mt-3 max-w-lg text-slate-300 text-sm leading-relaxed">
+              Book your legal consultation online in under a minute. Our chambers will confirm your appointment slot instantly.
             </p>
-            <Button asChild size="lg" variant="secondary" className="mt-6">
-              <Link to="/appointment">Book Appointment</Link>
+            <Button asChild size="lg" className="mt-6 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-950 px-6">
+              <Link to="/appointment">
+                Book Consultation
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
-          <ul className="space-y-3 text-sm">
+          <ul className="space-y-4 rounded-xl border border-slate-800/80 bg-slate-900/60 p-6 text-sm text-slate-300 backdrop-blur">
             <li className="flex items-center gap-3">
-              <Phone className="h-4 w-4" aria-hidden="true" /> {CLINIC.phone}
+              <Phone className="h-4 w-4 text-blue-400 shrink-0" aria-hidden="true" />
+              <span>Chambers: <strong className="text-white font-medium">{LAW_FIRM.phone}</strong></span>
             </li>
             <li className="flex items-center gap-3">
-              <Mail className="h-4 w-4" aria-hidden="true" /> {CLINIC.email}
+              <Mail className="h-4 w-4 text-blue-400 shrink-0" aria-hidden="true" />
+              <span>Email: <strong className="text-white font-medium">{LAW_FIRM.email}</strong></span>
             </li>
             <li className="flex items-center gap-3">
-              <MapPin className="h-4 w-4" aria-hidden="true" /> {CLINIC.address}
+              <MapPin className="h-4 w-4 text-blue-400 shrink-0" aria-hidden="true" />
+              <span>Address: <strong className="text-white font-medium">{LAW_FIRM.address}</strong></span>
             </li>
           </ul>
         </div>
@@ -160,7 +168,7 @@ export function HomeDeferredSections() {
 
 function HomeServiceCard({ service }: { service: DBService }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const description = service.description?.trim() || "No description provided.";
+  const description = service.description?.trim() || "Comprehensive legal evaluation and counsel.";
   const serviceImages = getServiceImageList(service as unknown as Record<string, unknown>).map(
     (src, index) => ({
       src,
@@ -170,48 +178,53 @@ function HomeServiceCard({ service }: { service: DBService }) {
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded} asChild>
-      <Card className="h-full min-w-0 overflow-hidden transition-shadow hover:shadow-lg">
+      <Card className="h-full min-w-0 overflow-hidden border-slate-800 bg-[#121b2d] text-slate-100 transition-all duration-300 hover:border-blue-600/50 hover:shadow-xl">
         {serviceImages.length > 0 && (
-          <div className="aspect-[16/10] border-b border-border/70 bg-secondary/50">
+          <div className="aspect-[16/10] border-b border-slate-800 bg-slate-950">
             <ImageCarousel
               images={serviceImages}
               label={`${service.name} image gallery`}
               className="h-full"
               frameClassName="p-3"
-              imageClassName="rounded-2xl"
+              imageClassName="rounded-xl"
               emptyLabel="Service image coming soon"
             />
           </div>
         )}
         <CardContent className="flex h-full min-w-0 flex-col p-6">
           <div className="flex min-w-0 items-start justify-between gap-4">
-            <h3 className="min-w-0 break-words font-semibold [overflow-wrap:anywhere]">
+            <h3 className="min-w-0 font-serif text-lg font-bold leading-snug text-white [overflow-wrap:anywhere]">
               {service.name}
             </h3>
-            <span className="min-w-0 max-w-[45%] shrink-0 break-words text-right font-bold text-primary [overflow-wrap:anywhere]">
+            <span className="min-w-0 max-w-[45%] shrink-0 break-words text-right font-bold text-blue-400 [overflow-wrap:anywhere]">
               {service.price}
             </span>
           </div>
           <p
-            className={`mt-3 min-w-0 break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere] ${
+            className={`mt-3 min-w-0 break-words text-sm leading-relaxed text-slate-300 [overflow-wrap:anywhere] ${
               isExpanded ? "" : "max-h-[3.75rem] overflow-hidden"
             }`}
           >
             {description}
           </p>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="mt-3 inline-flex w-fit items-center gap-1 rounded-md text-xs font-bold text-primary transition-colors hover:text-primary/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label={`${isExpanded ? "Collapse" : "Expand"} description for ${service.name}`}
-            >
-              {isExpanded ? "Show less" : "Expand"}
-              <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
-                aria-hidden="true"
-              />
-            </button>
-          </CollapsibleTrigger>
+          <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-800/80">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                aria-label={`${isExpanded ? "Collapse" : "Expand"} description for ${service.name}`}
+              >
+                {isExpanded ? "Show Less" : "Read Details"}
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+            </CollapsibleTrigger>
+            <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-xs">
+              <Link to="/appointment" search={{ service: service.id }}>Book</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </Collapsible>
@@ -229,9 +242,9 @@ function SectionHeader({
 }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <div className="text-xs font-semibold uppercase tracking-wider text-primary">{eyebrow}</div>
-      <h2 className="mt-2 text-3xl font-bold sm:text-4xl">{title}</h2>
-      {subtitle && <p className="mt-3 text-muted-foreground">{subtitle}</p>}
+      <div className="text-xs font-bold uppercase tracking-widest text-blue-400">{eyebrow}</div>
+      <h2 className="mt-2.5 font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl">{title}</h2>
+      {subtitle && <p className="mt-3 text-sm leading-relaxed text-slate-400">{subtitle}</p>}
     </div>
   );
 }
@@ -240,11 +253,11 @@ function DoctorsSkeleton() {
   return (
     <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, index) => (
-        <Card key={index} className="overflow-hidden">
-          <Skeleton className="aspect-square w-full" />
+        <Card key={index} className="overflow-hidden border-slate-800 bg-slate-900">
+          <Skeleton className="aspect-square w-full bg-slate-800" />
           <CardContent className="space-y-2 p-5">
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-5 w-2/3 bg-slate-800" />
+            <Skeleton className="h-4 w-1/2 bg-slate-800" />
           </CardContent>
         </Card>
       ))}
@@ -256,15 +269,14 @@ function ServicesSkeleton() {
   return (
     <div className="mt-10 grid gap-5 lg:grid-cols-3">
       {Array.from({ length: 3 }).map((_, index) => (
-        <Card key={index} className="overflow-hidden">
+        <Card key={index} className="overflow-hidden border-slate-800 bg-slate-900">
           <CardContent className="space-y-3 p-6">
             <div className="flex items-start justify-between gap-4">
-              <Skeleton className="h-6 w-2/3" />
-              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="h-6 w-2/3 bg-slate-800" />
+              <Skeleton className="h-6 w-1/4 bg-slate-800" />
             </div>
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-5/6" />
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-full bg-slate-800" />
+            <Skeleton className="h-4 w-5/6 bg-slate-800" />
           </CardContent>
         </Card>
       ))}
@@ -274,10 +286,10 @@ function ServicesSkeleton() {
 
 function ErrorState({ message, retry }: { message: string; retry: () => void }) {
   return (
-    <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-destructive/20 bg-destructive/10 p-6 text-center">
-      <p className="font-medium text-destructive">Failed to load database records</p>
-      <p className="mt-1 text-sm text-muted-foreground">{message}</p>
-      <Button variant="outline" size="sm" className="mt-4" onClick={retry}>
+    <div className="mx-auto mt-10 max-w-xl rounded-xl border border-red-900/50 bg-red-950/20 p-6 text-center text-slate-200">
+      <p className="font-medium text-red-400">Failed to load database records</p>
+      <p className="mt-1 text-sm text-slate-400">{message}</p>
+      <Button variant="outline" size="sm" className="mt-4 border-slate-700 bg-slate-900" onClick={retry}>
         Try Again
       </Button>
     </div>
@@ -286,9 +298,9 @@ function ErrorState({ message, retry }: { message: string; retry: () => void }) 
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="mx-auto mt-10 max-w-md rounded-2xl border border-dashed border-border p-10 text-center">
+    <div className="mx-auto mt-10 max-w-md rounded-xl border border-dashed border-slate-800 p-10 text-center text-slate-200">
       <p className="text-lg font-semibold">{title}</p>
-      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+      <p className="mt-2 text-sm text-slate-400">{description}</p>
     </div>
   );
 }

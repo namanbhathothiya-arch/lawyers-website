@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Calendar, Clock, LogOut, Menu, Search, Stethoscope } from "lucide-react";
+import { Calendar, Clock, LogOut, Menu, Search, Scale } from "lucide-react";
 import { StaffGuard } from "@/components/StaffGuard";
 import { useAuth } from "@/hooks/use-auth";
 import { AppointmentsManager } from "@/components/admin/AppointmentsManager";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/staff")({
   head: () => ({
-    meta: [{ title: "Staff Portal — HeartCare Advanced Clinic" }],
+    meta: [{ title: "Staff Portal — [FIRM NAME]" }],
   }),
   component: () => (
     <StaffGuard>
@@ -25,8 +25,8 @@ const staffNav: Array<{
   icon: typeof Clock;
 }> = [
   { id: "today", label: "Today", icon: Clock },
-  { id: "appointments", label: "Appointments", icon: Calendar },
-  { id: "search", label: "Search Patients", icon: Search },
+  { id: "appointments", label: "Consultations", icon: Calendar },
+  { id: "search", label: "Search Clients", icon: Search },
 ];
 
 function StaffPortal() {
@@ -53,9 +53,9 @@ function StaffPortal() {
       >
         <div className="h-16 px-6 border-b border-border flex items-center gap-2">
           <span className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center">
-            <Stethoscope className="h-4.5 w-4.5" />
+            <Scale className="h-4.5 w-4.5" />
           </span>
-          <span className="font-bold text-sm leading-tight tracking-tight">Reception Desk</span>
+          <span className="font-bold text-sm leading-tight tracking-tight">Front Desk</span>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-1">
@@ -104,7 +104,7 @@ function StaffPortal() {
               {activeTab === "today"
                 ? "Today's Schedule"
                 : activeTab === "search"
-                  ? "Search Patients"
+                  ? "Search Clients"
                   : "Upcoming Appointments"}
             </h2>
           </div>

@@ -14,37 +14,37 @@ import { type DBFaq, useFaqs } from "@/hooks/use-supabase-data";
 const FALLBACK_FAQS: DBFaq[] = [
   {
     id: "appointment-booking",
-    question: "How do I book an appointment?",
+    question: "How do I book a consultation with an advocate?",
     answer:
-      "You can book online through the appointment page or call the clinic directly. After choosing a service, doctor, date, and available time slot, we will confirm your booking details.",
-    category: "Appointments",
+      "You can book online through our consultation booking page or call our chambers directly. Select your legal practice area, lawyer, preferred date, and slot, then complete payment.",
+    category: "Consultations",
     sort_order: 0,
     is_published: true,
   },
   {
     id: "first-visit",
-    question: "What should I bring for my first visit?",
+    question: "What documents should I bring for my legal consultation?",
     answer:
-      "Please bring previous prescriptions, investigation reports, current medications, and any discharge summaries if available. This helps the doctor understand your health history clearly.",
-    category: "Visit preparation",
+      "Please bring any relevant contracts, court notices, agreements, police reports, or correspondence. This allows the advocate to provide a comprehensive case evaluation.",
+    category: "Preparation",
     sort_order: 1,
     is_published: true,
   },
   {
     id: "pricing",
-    question: "Are service prices transparent?",
+    question: "Are legal consultation fees transparent?",
     answer:
-      "Yes. Service prices are shown before booking wherever available. If a service needs additional tests or procedures, the care team will explain those costs before proceeding.",
-    category: "Billing",
+      "Yes. All legal consultation fees and practice prices are displayed upfront before booking. For ongoing litigation or drafting, our advocates discuss fee structures clearly.",
+    category: "Billing & Fees",
     sort_order: 2,
     is_published: true,
   },
   {
     id: "follow-up",
-    question: "Is follow-up support included?",
+    question: "How is client confidentiality maintained?",
     answer:
-      "Most consultations include a clear follow-up plan. The doctor will explain when you should return, whether further tests are needed, and how to continue your treatment safely.",
-    category: "After care",
+      "All consultations and shared documents are strictly protected under lawyer-client privilege and Indian Bar Council professional ethics standards.",
+    category: "Confidentiality",
     sort_order: 3,
     is_published: true,
   },
@@ -66,46 +66,46 @@ export function FAQSection() {
   }, [faqs, normalizedQuery]);
 
   return (
-    <section className="relative isolate overflow-hidden bg-background py-20 sm:py-24">
-      <div className="absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
+    <section className="relative isolate overflow-hidden bg-[#070c14] py-20 sm:py-24 border-t border-slate-800/80">
+      <div className="absolute left-1/2 top-0 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-blue-600/10 blur-3xl" />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div className="lg:sticky lg:top-24">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary-light/60 px-3.5 py-2 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-primary shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400 shadow-sm">
               <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              FAQs
+              Frequently Asked Questions
             </div>
-            <h2 className="hero-display mt-5 max-w-xl text-4xl leading-tight text-foreground sm:text-5xl">
-              Questions, answered with <span className="text-primary">clarity.</span>
+            <h2 className="hero-display mt-5 max-w-xl font-serif text-3xl font-bold leading-tight text-white sm:text-5xl">
+              Legal Queries, Answered with <span className="text-blue-500">Clarity.</span>
             </h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Find quick answers about appointments, preparation, billing, and follow-up care.
+            <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-300">
+              Find quick answers about advocate consultations, case preparation, fee structures, and confidentiality.
             </p>
 
-            <div className="mt-7 flex items-center gap-2 rounded-2xl border border-primary/10 bg-secondary/45 p-3 text-sm text-foreground/75">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-success/10 text-success">
+            <div className="mt-7 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 p-4 text-sm text-slate-300 backdrop-blur">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-900/60 text-blue-400">
                 <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               </span>
-              <span>Still unsure? Book a consultation and our team will guide you.</span>
+              <span>Need specific legal counsel? Book a consultation for personalized advice.</span>
             </div>
           </div>
 
-          <div className="min-w-0 overflow-hidden rounded-[1.75rem] border border-primary/10 bg-white/90 p-4 shadow-[0_24px_70px_-45px_rgba(16,45,75,0.55)] backdrop-blur sm:p-6">
+          <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-[#0d1626] p-4 shadow-2xl backdrop-blur sm:p-6">
             <label htmlFor="faq-search" className="sr-only">
-              Search frequently asked questions
+              Search legal questions
             </label>
             <div className="relative">
               <Search
-                className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                 aria-hidden="true"
               />
               <Input
                 id="faq-search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search appointment, pricing, reports..."
-                className="h-12 rounded-2xl border-primary/10 bg-background pl-11 shadow-sm"
+                placeholder="Search consultation, court fees, documents..."
+                className="h-12 rounded-xl border-slate-700 bg-slate-900 text-white placeholder:text-slate-500 pl-11 shadow-inner focus:border-blue-500"
                 type="search"
               />
             </div>
@@ -113,30 +113,30 @@ export function FAQSection() {
             {isLoading ? (
               <div className="mt-5 space-y-3" aria-label="Loading FAQs">
                 {Array.from({ length: 4 }).map((_, index) => (
-                  <Skeleton key={index} className="h-16 rounded-2xl" />
+                  <Skeleton key={index} className="h-16 rounded-xl bg-slate-800" />
                 ))}
               </div>
             ) : (
               <div className="mt-5">
                 {filteredFaqs.length > 0 ? (
-                  <ScrollArea className="h-[24rem] w-full max-w-full rounded-[1.5rem] border border-border/60 bg-gradient-to-b from-background/95 via-background/90 to-secondary/20 sm:h-[28rem] lg:h-[32rem]">
-                    <Accordion type="single" collapsible className="w-full max-w-full space-y-3 p-1.5 pr-3 sm:p-2 sm:pr-4">
+                  <ScrollArea className="h-[24rem] w-full max-w-full rounded-xl border border-slate-800 bg-slate-950/60 sm:h-[28rem] lg:h-[32rem]">
+                    <Accordion type="single" collapsible className="w-full max-w-full space-y-3 p-2 sm:p-3">
                       {filteredFaqs.map((faq, index) => (
                         <AccordionItem
                           key={faq.id}
                           value={faq.id}
-                          className="hero-enter w-full max-w-full overflow-hidden rounded-2xl border border-border bg-background/95 px-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                          className="w-full max-w-full overflow-hidden rounded-xl border border-slate-800 bg-[#121b2d] px-4 shadow-sm transition-all duration-300 hover:border-blue-600/40"
                           style={{ animationDelay: `${index * 70}ms` }}
                         >
-                          <AccordionTrigger className="w-full min-w-0 gap-4 py-5 text-left text-base font-bold leading-6 hover:no-underline sm:text-lg">
-                            <span className="block min-w-0 max-w-full whitespace-normal break-all [overflow-wrap:anywhere]">
+                          <AccordionTrigger className="w-full min-w-0 gap-4 py-4 text-left text-base font-bold leading-snug text-white hover:no-underline font-serif sm:text-lg">
+                            <span className="block min-w-0 max-w-full whitespace-normal break-words [overflow-wrap:anywhere]">
                               {faq.question}
                             </span>
                           </AccordionTrigger>
-                          <AccordionContent className="text-sm leading-7 text-muted-foreground sm:text-base">
-                            <div className="max-h-40 min-w-0 max-w-full overflow-x-hidden overflow-y-auto whitespace-normal break-all border-t border-border/70 pt-4 pr-2 [overflow-wrap:anywhere]">
+                          <AccordionContent className="text-sm leading-relaxed text-slate-300">
+                            <div className="max-h-48 min-w-0 max-w-full overflow-x-hidden overflow-y-auto whitespace-normal break-words border-t border-slate-800 pt-3 pb-2 [overflow-wrap:anywhere]">
                               {faq.category && (
-                                <div className="mb-2 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-primary">
+                                <div className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-blue-400">
                                   {faq.category}
                                 </div>
                               )}
@@ -148,12 +148,12 @@ export function FAQSection() {
                     </Accordion>
                   </ScrollArea>
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-border bg-secondary/30 p-6 text-center">
-                      <p className="font-semibold">No matching FAQs found</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Try searching for appointment, reports, pricing, or follow-up.
-                      </p>
-                    </div>
+                  <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/60 p-6 text-center text-slate-300">
+                    <p className="font-semibold">No matching FAQs found</p>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Try searching for consultation, documents, fees, or advocacy.
+                    </p>
+                  </div>
                 )}
               </div>
             )}

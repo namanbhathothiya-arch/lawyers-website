@@ -172,7 +172,7 @@ export function StaffManager() {
             <div className="py-20 text-center border border-dashed border-border rounded-xl bg-secondary/10">
               <p className="font-semibold">No staff accounts yet</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Add a staff account so they can sign in through the clinic portal.
+                Add a staff account so they can sign in through the law firm portal.
               </p>
             </div>
           ) : (
