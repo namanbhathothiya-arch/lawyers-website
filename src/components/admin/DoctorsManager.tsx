@@ -29,6 +29,8 @@ type AdminLawyer = {
   experience: string;
   photo?: string | null;
   bio?: string | null;
+  phone_number?: string | null;
+  whatsapp_number?: string | null;
   is_featured_hero?: boolean;
   lawyer_services?: LawyerServiceMapping[];
   doctor_services?: LawyerServiceMapping[];
@@ -52,6 +54,8 @@ export function DoctorsManager() {
   const [experience, setExperience] = useState("");
   const [photo, setPhoto] = useState("");
   const [bio, setBio] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [isFeaturedHero, setIsFeaturedHero] = useState(false);
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -98,6 +102,8 @@ export function DoctorsManager() {
     setExperience("");
     setPhoto("");
     setBio("");
+    setPhoneNumber("");
+    setWhatsappNumber("");
     setIsFeaturedHero(false);
     setSelectedServiceIds([]);
     setFile(null);
@@ -117,6 +123,8 @@ export function DoctorsManager() {
     setExperience(lawyer.experience);
     setPhoto(cleanLawyerPhoto(lawyer.photo) || "");
     setBio(lawyer.bio || "");
+    setPhoneNumber(lawyer.phone_number || (lawyer as { phone?: string }).phone || "");
+    setWhatsappNumber(lawyer.whatsapp_number || (lawyer as { whatsapp?: string }).whatsapp || "");
     setIsFeaturedHero(lawyer.is_featured_hero || isLegacyHeroLawyer(lawyer.photo));
     const mappings = lawyer.lawyer_services || lawyer.doctor_services || [];
     setSelectedServiceIds(mappings.map((mapping) => mapping.service_id));
@@ -240,6 +248,8 @@ export function DoctorsManager() {
         specialization,
         experience,
         bio: bio || null,
+        phone_number: phoneNumber.trim() || null,
+        whatsapp_number: whatsappNumber.trim() || null,
         is_featured_hero: isFeaturedHero,
         photo: setLegacyHeroLawyer(uploadedPhotoUrl || null, isFeaturedHero),
       };
@@ -360,52 +370,74 @@ export function DoctorsManager() {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name & Title *</label>
+                <label className="text-sm font-medium text-foreground">Full Name & Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Adv. Raj Sharma"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Specialization / Practice Area *</label>
+                <label className="text-sm font-medium text-foreground">Specialization / Practice Area *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Corporate Law"
                   value={specialization}
                   onChange={(e) => setSpecialization(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Experience Level *</label>
+                <label className="text-sm font-medium text-foreground">Experience Level *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Senior Partner (15+ Yrs)"
                   value={experience}
                   onChange={(e) => setExperience(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Photo Upload / URL</label>
+                <label className="text-sm font-medium text-foreground">Phone Number (for Direct Voice Call)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. +91 98765 43210"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">WhatsApp Number (for Direct WhatsApp Chat)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. +91 98765 43211"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium text-foreground">Photo Upload / URL</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     placeholder="https://... or upload photo"
                     value={photo}
                     onChange={(e) => setPhoto(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm"
+                    className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
                   />
-                  <label className="cursor-pointer px-3 py-2 border border-input rounded-md bg-secondary/50 hover:bg-secondary text-sm flex items-center gap-2">
+                  <label className="cursor-pointer px-3 py-2 border border-input rounded-md bg-secondary/50 hover:bg-secondary text-sm text-foreground flex items-center gap-2">
                     <ImageIcon className="h-4 w-4" />
                     <span>Upload</span>
                     <input
@@ -416,28 +448,28 @@ export function DoctorsManager() {
                     />
                   </label>
                 </div>
-                {file && <p className="text-xs text-primary font-medium">Selected file: {file.name}</p>}
+                {file && <p className="text-xs text-foreground/70 font-medium">Selected file: {file.name}</p>}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Biography / Professional Profile</label>
+              <label className="text-sm font-medium text-foreground">Biography / Professional Profile</label>
               <textarea
                 rows={3}
                 placeholder="Brief professional profile and experience summary..."
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm"
+                className="w-full px-3 py-2 rounded-md border border-input bg-background text-sm text-foreground placeholder:text-foreground/55"
               />
             </div>
 
             {/* Legal Service Mapping */}
             <div className="space-y-2 border-t border-border pt-4">
-              <label className="text-sm font-medium flex items-center gap-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Briefcase className="h-4 w-4 text-primary" />
                 <span>Assigned Legal Services</span>
               </label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/70">
                 Select which services this lawyer provides. Used for service-first booking filter.
               </p>
 
@@ -452,7 +484,7 @@ export function DoctorsManager() {
                       className={`flex items-center justify-between p-3 rounded-lg border text-left text-sm transition-all ${
                         isChecked
                           ? "border-primary bg-primary/10 text-foreground font-medium"
-                          : "border-border hover:bg-secondary/40 text-muted-foreground"
+                          : "border-border hover:bg-secondary/40 text-foreground/80"
                       }`}
                     >
                       <span>{service.name}</span>
@@ -472,7 +504,7 @@ export function DoctorsManager() {
                 onChange={(e) => setIsFeaturedHero(e.target.checked)}
                 className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
               />
-              <label htmlFor="isFeaturedHero" className="text-sm font-medium cursor-pointer flex items-center gap-1.5">
+              <label htmlFor="isFeaturedHero" className="text-sm font-medium text-foreground cursor-pointer flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-amber-500 fill-amber-500" />
                 <span>Feature as Main Hero Lawyer on Homepage</span>
               </label>
@@ -482,7 +514,7 @@ export function DoctorsManager() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="px-4 py-2 border border-input rounded-md text-sm font-medium hover:bg-secondary transition-colors"
+                className="px-4 py-2 border border-input rounded-md text-sm font-medium text-foreground hover:bg-secondary transition-colors"
               >
                 Cancel
               </button>

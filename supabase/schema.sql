@@ -35,6 +35,8 @@ CREATE TABLE public.lawyers (
     experience TEXT NOT NULL,
     photo TEXT,
     bio TEXT,
+    phone_number TEXT,
+    whatsapp_number TEXT,
     is_featured_hero BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

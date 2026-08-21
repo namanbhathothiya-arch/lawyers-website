@@ -37,6 +37,7 @@ type GalleryImage = {
   description: string | null;
   sort_order: number;
   is_hero_image: boolean;
+  is_hero_background?: boolean;
   created_at: string;
 };
 
@@ -80,6 +81,7 @@ export function GalleryManager() {
   const [description, setDescription] = useState("");
   const [sortOrder, setSortOrder] = useState("0");
   const [isHeroImage, setIsHeroImage] = useState(false);
+  const [heroRole, setHeroRole] = useState<"none" | "front" | "background">("none");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState("");
 
@@ -215,39 +217,32 @@ export function GalleryManager() {
           data: { publicUrl },
         } = supabase.storage.from("firm-gallery").getPublicUrl(filePath);
 
+        // If hero role selected, reset previous images with same role
+        if (heroRole === "front") {
+          await supabase
+            .from("gallery_images")
+            .update({ is_hero_image: false })
+            .eq("is_hero_image", true);
+        } else if (heroRole === "background") {
+          await supabase
+            .from("gallery_images")
+            .update({ is_hero_background: false })
+            .eq("is_hero_background", true);
+        }
+
         // Insert database record
         const payload = {
           image_url: publicUrl,
           title: title.trim(),
           description: description.trim() || null,
           sort_order: Number.parseInt(sortOrder, 10) || 0,
+          is_hero_image: heroRole === "front",
+          is_hero_background: heroRole === "background",
         };
         const { error: dbError } = await supabase
           .from("gallery_images")
-          .insert([{ ...payload, is_hero_image: isHeroImage }]);
-        if (dbError) {
-          if (!isMissingHeroColumn(dbError)) throw dbError;
-          if (isHeroImage) {
-            await Promise.all(
-              (images || [])
-                .filter((image) => isLegacyHeroImage(image.image_url))
-                .map((image) =>
-                  supabase
-                    .from("gallery_images")
-                    .update({ image_url: cleanHeroImageUrl(image.image_url) })
-                    .eq("id", image.id),
-                ),
-            );
-          }
-          const { error: retryError } = await supabase.from("gallery_images").insert([
-            {
-              ...payload,
-              image_url: setLegacyHeroImage(payload.image_url, isHeroImage),
-            },
-          ]);
-          if (retryError) throw retryError;
-          toast.success("Image saved and selected for the Hero Section.");
-        }
+          .insert([payload]);
+        if (dbError) throw dbError;
 
         toast.success("Image added to gallery", { id: toastId });
       } catch (err: unknown) {
@@ -264,6 +259,7 @@ export function GalleryManager() {
       setDescription("");
       setSortOrder("0");
       setIsHeroImage(false);
+      setHeroRole("none");
       setImageFile(null);
       setImagePreview("");
     },
@@ -315,38 +311,15 @@ export function GalleryManager() {
           title: title.trim(),
           description: description.trim() || null,
           sort_order: Number.parseInt(sortOrder, 10) || 0,
+          is_hero_image: heroRole === "front",
+          is_hero_background: heroRole === "background",
         };
         const { error: dbError } = await supabase
           .from("gallery_images")
-          .update({ ...payload, is_hero_image: isHeroImage })
+          .update(payload)
           .eq("id", editingImage.id);
 
-        if (dbError) {
-          if (!isMissingHeroColumn(dbError)) throw dbError;
-          if (isHeroImage) {
-            await Promise.all(
-              (images || [])
-                .filter(
-                  (image) => image.id !== editingImage.id && isLegacyHeroImage(image.image_url),
-                )
-                .map((image) =>
-                  supabase
-                    .from("gallery_images")
-                    .update({ image_url: cleanHeroImageUrl(image.image_url) })
-                    .eq("id", image.id),
-                ),
-            );
-          }
-          const { error: retryError } = await supabase
-            .from("gallery_images")
-            .update({
-              ...payload,
-              image_url: setLegacyHeroImage(payload.image_url, isHeroImage),
-            })
-            .eq("id", editingImage.id);
-          if (retryError) throw retryError;
-          toast.success("Image saved and selected for the Hero Section.");
-        }
+        if (dbError) throw dbError;
 
         toast.success("Gallery item updated successfully", { id: toastId });
       } catch (err: unknown) {
@@ -364,6 +337,7 @@ export function GalleryManager() {
       setDescription("");
       setSortOrder("0");
       setIsHeroImage(false);
+      setHeroRole("none");
       setImageFile(null);
       setImagePreview("");
     },
@@ -451,11 +425,9 @@ export function GalleryManager() {
   function handleOpenAdd() {
     setTitle("");
     setDescription("");
-    const nextSortOrder = images?.length
-      ? Math.max(...images.map((image) => image.sort_order)) + 1
-      : 0;
-    setSortOrder(String(nextSortOrder));
+    setSortOrder("0");
     setIsHeroImage(false);
+    setHeroRole("none");
     setImageFile(null);
     setImagePreview("");
     setIsAddOpen(true);
@@ -467,6 +439,9 @@ export function GalleryManager() {
     setDescription(item.description || "");
     setSortOrder(String(item.sort_order));
     setIsHeroImage(item.is_hero_image || isLegacyHeroImage(item.image_url));
+    setHeroRole(
+      item.is_hero_background ? "background" : item.is_hero_image ? "front" : "none",
+    );
     setImageFile(null);
     setImagePreview(cleanHeroImageUrl(item.image_url));
     setIsEditOpen(true);
@@ -549,10 +524,16 @@ export function GalleryManager() {
                         <h4 className="font-semibold text-sm leading-tight text-foreground">
                           {img.title || "Untitled Gallery Item"}
                         </h4>
-                        {(img.is_hero_image || isLegacyHeroImage(img.image_url)) && (
+                        {img.is_hero_image && (
                           <Badge className="gap-1 bg-primary text-primary-foreground">
                             <Sparkles className="h-3 w-3" aria-hidden="true" />
-                            Hero Image
+                            Hero Front Image
+                          </Badge>
+                        )}
+                        {img.is_hero_background && (
+                          <Badge variant="secondary" className="gap-1 bg-slate-800 text-slate-100">
+                            <Sparkles className="h-3 w-3" aria-hidden="true" />
+                            Hero Background Image
                           </Badge>
                         )}
                       </div>
@@ -650,21 +631,40 @@ export function GalleryManager() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
-                  <div>
-                    <Label htmlFor="add-hero-image" className="font-semibold">
-                      Use as Hero Image
-                    </Label>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Selecting this image automatically replaces the current hero image.
-                    </p>
+                <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <Label className="font-semibold text-sm">Hero Image Role</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Assign this photo to a hero role on the homepage.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+                    <Button
+                      type="button"
+                      variant={heroRole === "none" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("none")}
+                    >
+                      Normal Gallery
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={heroRole === "front" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("front")}
+                    >
+                      Hero Front
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={heroRole === "background" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("background")}
+                    >
+                      Hero Background
+                    </Button>
                   </div>
-                  <Switch
-                    id="add-hero-image"
-                    checked={isHeroImage}
-                    onCheckedChange={setIsHeroImage}
-                    aria-label="Use as Hero Image"
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -723,8 +723,7 @@ export function GalleryManager() {
                   </p>
                 </div>
               </div>
-
-              <DialogFooter className="p-6 border-t border-border shrink-0 bg-background">
+              <DialogFooter className="p-6 border-t border-border shrink-0 bg-background">
                 <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
                   Cancel
                 </Button>
@@ -798,21 +797,40 @@ export function GalleryManager() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary-light/40 p-4">
-                  <div>
-                    <Label htmlFor="edit-hero-image" className="font-semibold">
-                      Use as Hero Image
-                    </Label>
-                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                      Selecting this image automatically replaces the current hero image.
-                    </p>
+                <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/5 p-4">
+                  <Label className="font-semibold text-sm">Hero Image Role</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Assign this photo to a hero role on the homepage.
+                  </p>
+                  <div className="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+                    <Button
+                      type="button"
+                      variant={heroRole === "none" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("none")}
+                    >
+                      Normal Gallery
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={heroRole === "front" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("front")}
+                    >
+                      Hero Front
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={heroRole === "background" ? "default" : "outline"}
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => setHeroRole("background")}
+                    >
+                      Hero Background
+                    </Button>
                   </div>
-                  <Switch
-                    id="edit-hero-image"
-                    checked={isHeroImage}
-                    onCheckedChange={setIsHeroImage}
-                    aria-label="Use as Hero Image"
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -892,7 +910,7 @@ export function GalleryManager() {
               <AlertDialogTitle className="text-lg font-bold">
                 Are you absolutely sure?
               </AlertDialogTitle>
-              <AlertDialogDescription className="text-sm text-muted-foreground">
+              <AlertDialogDescription className="text-sm text-foreground/70">
                 This will permanently delete the gallery photo{" "}
                 <span className="font-semibold text-foreground">
                   {deleteImage?.title || "Untitled Gallery Item"}

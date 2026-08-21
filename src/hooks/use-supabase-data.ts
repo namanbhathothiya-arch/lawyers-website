@@ -26,6 +26,15 @@ export interface DBLawyer {
   bio?: string | null;
   is_featured_hero?: boolean;
   created_at?: string;
+  phone?: string | null;
+  mobile?: string | null;
+  contact_phone?: string | null;
+  phone_number?: string | null;
+  whatsapp?: string | null;
+  whatsapp_number?: string | null;
+  whatsapp_phone?: string | null;
+  email?: string | null;
+  contact_email?: string | null;
 }
 
 export type DBDoctor = DBLawyer;
@@ -36,21 +45,43 @@ export interface HeroGalleryImage {
   title?: string | null;
   description?: string | null;
   is_hero_image: boolean;
+  is_hero_background?: boolean;
 }
 
 export interface DBLegalService {
   id: string;
   name: string;
+  slug?: string | null;
+  section_id?: string | null;
   description?: string | null;
+  short_description?: string | null;
+  how_we_help?: string | null;
+  important_information?: string | null;
   price: string;
+  display_order?: number;
+  is_published?: boolean;
+  archived_at?: string | null;
   image_url?: string | null;
   image_urls?: string[] | string | null;
   images?: string[] | string | null;
   photos?: string[] | string | null;
   created_at?: string;
+  updated_at?: string;
 }
 
 export type DBService = DBLegalService;
+
+export interface DBServiceSection {
+  id: string;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  display_order?: number;
+  is_published?: boolean;
+  archived_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface DBFaq {
   id: string;
@@ -97,6 +128,58 @@ export function useLawyers() {
 
 export const useDoctors = useLawyers;
 
+export function useLawyer(lawyerId: string) {
+  return useQuery<DBLawyer | null>({
+    queryKey: ["lawyer", lawyerId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(lawyerId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lawyers")
+        .select("*")
+        .eq("id", lawyerId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+      return (data as DBLawyer | null) || null;
+    },
+  });
+}
+
+export function useLawyerPracticeAreas(lawyerId: string) {
+  return useQuery<{ id: string; name: string; description?: string | null }[]>({
+    queryKey: ["lawyer-practice-areas", lawyerId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(lawyerId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lawyer_services")
+        .select("service_id")
+        .eq("lawyer_id", lawyerId);
+
+      if (error) {
+        throw error;
+      }
+
+      const serviceIds = (data || []).map((row) => row.service_id).filter(Boolean);
+      if (serviceIds.length === 0) return [];
+
+      const { data: services, error: servicesError } = await supabase
+        .from("legal_services")
+        .select("id, name, description")
+        .in("id", serviceIds)
+        .order("name", { ascending: true });
+
+      if (servicesError) {
+        throw servicesError;
+      }
+      return services || [];
+    },
+  });
+}
+
 export function useLegalServices() {
   return useQuery<DBLegalService[]>({
     queryKey: ["legal_services"],
@@ -105,6 +188,9 @@ export function useLegalServices() {
       const { data, error } = await supabase
         .from("legal_services")
         .select("*")
+        .eq("is_published", true)
+        .is("archived_at", null)
+        .order("display_order", { ascending: true })
         .order("name", { ascending: true });
 
       if (error) {
@@ -116,6 +202,91 @@ export function useLegalServices() {
 }
 
 export const useServices = useLegalServices;
+
+export function useServiceSections() {
+  return useQuery<DBServiceSection[]>({
+    queryKey: ["service_sections"],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("service_sections")
+        .select("*")
+        .eq("is_published", true)
+        .is("archived_at", null)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+      return data || [];
+    },
+  });
+}
+
+export function useServiceSection(sectionId: string) {
+  return useQuery<DBServiceSection | null>({
+    queryKey: ["service_section", sectionId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(sectionId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("service_sections")
+        .select("*")
+        .eq("id", sectionId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+      return (data as DBServiceSection | null) || null;
+    },
+  });
+}
+
+export function useServicesBySection(sectionId: string) {
+  return useQuery<DBLegalService[]>({
+    queryKey: ["legal_services", "section", sectionId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(sectionId),
+    queryFn: async () => {
+      if (!sectionId) return [];
+      const { data, error } = await supabase
+        .from("legal_services")
+        .select("*")
+        .eq("section_id", sectionId)
+        .eq("is_published", true)
+        .is("archived_at", null)
+        .order("display_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+      return data || [];
+    },
+  });
+}
+
+export function useService(serviceId: string) {
+  return useQuery<DBLegalService | null>({
+    queryKey: ["legal_service", serviceId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(serviceId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("legal_services")
+        .select("*")
+        .eq("id", serviceId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+      return (data as DBLegalService | null) || null;
+    },
+  });
+}
 
 export function useFaqs() {
   return useQuery<DBFaq[]>({
@@ -169,12 +340,13 @@ export function useHeroContent() {
   return useQuery<{
     lawyer: DBLawyer | null;
     image: HeroGalleryImage | null;
+    backgroundImage: HeroGalleryImage | null;
     doctor?: DBLawyer | null;
   }>({
     queryKey: ["hero-content"],
     ...PUBLIC_CONTENT_QUERY_OPTIONS,
     queryFn: async () => {
-      const [lawyerResult, imageResult] = await Promise.all([
+      const [lawyerResult, imageResult, bgImageResult] = await Promise.all([
         supabase
           .from("lawyers")
           .select("id, name, specialization, experience, photo, bio, is_featured_hero")
@@ -182,8 +354,13 @@ export function useHeroContent() {
           .limit(1),
         supabase
           .from("gallery_images")
-          .select("id, image_url, title, description, is_hero_image")
+          .select("id, image_url, title, description, is_hero_image, is_hero_background")
           .eq("is_hero_image", true)
+          .limit(1),
+        supabase
+          .from("gallery_images")
+          .select("id, image_url, title, description, is_hero_image, is_hero_background")
+          .eq("is_hero_background", true)
           .limit(1),
       ]);
 
@@ -193,9 +370,13 @@ export function useHeroContent() {
       if (imageResult.error) {
         console.warn("Unable to load featured hero image:", imageResult.error.message);
       }
+      if (bgImageResult.error) {
+        console.warn("Unable to load featured hero background image:", bgImageResult.error.message);
+      }
 
       let lawyer = (lawyerResult.data?.[0] as DBLawyer | undefined) || null;
       let image = (imageResult.data?.[0] as HeroGalleryImage | undefined) || null;
+      let backgroundImage = (bgImageResult.data?.[0] as HeroGalleryImage | undefined) || null;
 
       if (!lawyer) {
         const { data: legacyLawyers } = await supabase
@@ -221,7 +402,7 @@ export function useHeroContent() {
         }
       }
 
-      return { lawyer, image, doctor: lawyer };
+      return { lawyer, image, backgroundImage, doctor: lawyer };
     },
   });
 }
@@ -285,6 +466,31 @@ export function useLawyerIdsForService(serviceId: string) {
 }
 
 export const useDoctorIdsForService = useLawyerIdsForService;
+
+export function useLawyersForService(serviceId: string) {
+  return useQuery<DBLawyer[]>({
+    queryKey: ["service-lawyers-records", serviceId],
+    ...PUBLIC_CONTENT_QUERY_OPTIONS,
+    enabled: Boolean(serviceId),
+    queryFn: async () => {
+      if (!serviceId) return [];
+
+      const { data, error } = await supabase
+        .from("lawyer_services")
+        .select("lawyer:lawyers(*)")
+        .eq("service_id", serviceId);
+
+      if (error) {
+        throw error;
+      }
+
+      return (data || [])
+        .map((row) => row.lawyer)
+        .filter(Boolean)
+        .map((lawyer) => lawyer as unknown as DBLawyer);
+    },
+  });
+}
 
 export interface DBAvailability {
   start_time: string;

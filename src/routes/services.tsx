@@ -1,326 +1,243 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { ArrowRight, Check, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type DBService, useLegalServices } from "@/hooks/use-supabase-data";
-import {
-  ArrowRight,
-  BookOpen,
-  Briefcase,
-  Check,
-  ChevronDown,
-  FileText,
-  Gavel,
-  Landmark,
-  Scale,
-  ShieldCheck,
-  type LucideIcon,
-} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LAW_FIRM } from "@/lib/clinic-data";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ImageCarousel } from "@/components/ImageCarousel";
-import { getServiceImageList } from "@/lib/image-lists";
+import { getServiceIcon } from "@/lib/service-presentation";
+import { getServiceSectionPathSlug } from "@/lib/service-slug";
+import { useServiceSections, useLegalServices } from "@/hooks/use-supabase-data";
 
 export const Route = createFileRoute("/services")({
   head: () => ({
     meta: [
-      { title: `Legal Services & Practice Areas — ${LAW_FIRM.name}` },
+      { title: `Legal Services & Service Sections — ${LAW_FIRM.name}` },
       {
         name: "description",
-        content: `Explore legal services, consultations, and court representation at ${LAW_FIRM.name}.`,
+        content: `Browse legal service sections and the specific services inside each practice area at ${LAW_FIRM.name}.`,
       },
-      { property: "og:title", content: `Legal Services & Practice Areas — ${LAW_FIRM.name}` },
+      { property: "og:title", content: `Legal Services & Service Sections — ${LAW_FIRM.name}` },
       {
         property: "og:description",
-        content: `Explore legal services, consultations, and court representation at ${LAW_FIRM.name}.`,
+        content: `Browse legal service sections and the specific services inside each practice area at ${LAW_FIRM.name}.`,
       },
       { property: "og:type", content: "website" },
     ],
     links: [{ rel: "canonical", href: "https://sharmalaw.in/services" }],
   }),
-  component: ServicesPage,
+  component: ServicesRoute,
 });
 
-function ServicesPage() {
-  const { data: services, isLoading, isError, error, refetch } = useLegalServices();
+function ServicesRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isNestedServicePath = pathname !== "/services" && pathname.startsWith("/services/");
 
-  const servicesSchema = useMemo(() => {
-    if (!services) return null;
-    return {
-      "@context": "https://schema.org",
-      "@graph": services.map((s) => {
-        const priceNum = s.price ? s.price.replace(/[^\d]/g, "") : "0";
-        return {
-          "@type": "LegalService",
-          "@id": `https://sharmalaw.in/services#${s.id}`,
-          name: s.name,
-          description: s.description,
-          provider: {
-            "@type": "ProfessionalService",
-            name: LAW_FIRM.name,
-            address: LAW_FIRM.address,
-          },
-          offers: {
-            "@type": "Offer",
-            price: priceNum,
-            priceCurrency: "INR",
-          },
-        };
-      }),
-    };
-  }, [services]);
+  if (isNestedServicePath) {
+    return <Outlet />;
+  }
+
+  return <ServicesPage />;
+}
+
+function ServicesPage() {
+  const { data: sections, isLoading, isError, error, refetch } = useServiceSections();
+  const { data: services } = useLegalServices();
+
+  const sectionsSchema = sections
+    ? {
+        "@context": "https://schema.org",
+        "@graph": sections.map((section) => {
+          const slug = getServiceSectionPathSlug(section, sections, services || []);
+          return {
+            "@type": "CollectionPage",
+            "@id": `https://sharmalaw.in/services/${slug}`,
+            name: section.name,
+            description: section.description,
+          };
+        }),
+      }
+    : null;
 
   return (
-    <main className="relative isolate overflow-hidden bg-[#070c14] text-slate-100 min-h-screen">
-      {servicesSchema && (
-        <script type="application/ld+json">{JSON.stringify(servicesSchema)}</script>
-      )}
+    <div className="relative isolate overflow-hidden bg-[#F8FAFC] text-slate-900 min-h-screen">
+      {sectionsSchema && <script type="application/ld+json">{JSON.stringify(sectionsSchema)}</script>}
 
-      {/* HEADER HERO */}
-      <section className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#09101d] to-[#070c14]">
-        <div className="absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(circle_at_18%_20%,rgba(37,99,235,0.18),transparent_40%)]" />
+      <section className="relative border-b border-slate-800 bg-[#0B1630] text-white">
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[1fr_auto] lg:items-end lg:px-8 lg:py-24">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400 shadow-sm backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-white/[0.05] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-300">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              Practice Areas & Legal Solutions
+              Legal service sections
             </div>
-            <h1 className="mt-6 font-serif text-4xl leading-tight font-bold text-white sm:text-6xl lg:text-7xl">
-              Strategic Counsel, <span className="text-blue-500">Transparent Fees.</span>
+            <h1 className="mt-6 font-serif text-4xl leading-tight font-semibold text-white sm:text-6xl">
+              Find the right <span className="text-blue-400">service section</span>.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg sm:leading-8">
-              From preliminary case assessment to court representation, every service is delivered with legal rigor, absolute confidentiality, and strategic foresight.
+              Start with the broad practice area, open the specific service, and then see the lawyers
+              who are mapped to that exact service.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:flex">
             {[
-              { value: "30+ Mins", label: "Focused Consultation" },
-              { value: "Confidential", label: "Privileged Advice" },
+              { value: "Two levels", label: "Section then service" },
+              { value: "Direct", label: "Lawyer mapping" },
             ].map((item) => (
               <div
                 key={item.label}
-                className="min-w-36 rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-4 shadow-lg backdrop-blur"
+                className="min-w-36 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-4 shadow-lg backdrop-blur-md"
               >
-                <div className="font-serif text-2xl font-bold text-blue-400">{item.value}</div>
-                <div className="mt-1 text-xs font-medium text-slate-400">{item.label}</div>
+                <div className="font-serif text-2xl font-semibold text-blue-400">
+                  {item.value}
+                </div>
+                <div className="mt-1 text-xs font-medium text-slate-300">{item.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SERVICES CATALOG */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-blue-400">
-              Legal Services
+            <div className="text-xs font-bold uppercase tracking-widest text-blue-600">
+              Service Sections
             </div>
-            <h2 className="mt-2 font-serif text-3xl font-bold text-white sm:text-4xl">Select your required legal service</h2>
+            <h2 className="mt-2 font-serif text-3xl font-semibold text-slate-900 sm:text-4xl">
+              Choose a practice area
+            </h2>
           </div>
-          <p className="max-w-md text-sm leading-relaxed text-slate-400">
-            Choose any legal service to view comprehensive details, deliverables, and book directly with your advocate.
+          <p className="max-w-md text-sm leading-relaxed text-slate-600">
+            Open a section to see the specific legal services that belong to it. The database
+            controls which services appear here.
           </p>
         </div>
 
         {isLoading ? (
-          <ServicesSkeleton />
+          <SectionsSkeleton />
         ) : isError ? (
           <ErrorState message={error?.message || "Unknown error"} retry={refetch} />
-        ) : !services || services.length === 0 ? (
+        ) : !sections || sections.length === 0 ? (
           <EmptyState
-            title="No services found"
-            description="There are no services configured in the database yet."
+            title="No service sections found"
+            description="There are no published service sections in the database yet."
           />
         ) : (
-          <Carousel
-            opts={{ align: "start" }}
-            className="mt-10 lg:mt-12"
-            aria-label="Services carousel"
-          >
-            <CarouselContent className="-ml-5">
-              {services.map((service, index) => (
-                <CarouselItem key={service.id} className="min-w-0 basis-full pl-5 lg:basis-1/3">
-                  <ServiceCard service={service} index={index} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <CarouselPrevious className="static h-10 w-10 translate-y-0 border-slate-700 bg-slate-900 text-slate-200 hover:bg-blue-600 hover:text-white" />
-              <CarouselNext className="static h-10 w-10 translate-y-0 border-slate-700 bg-slate-900 text-slate-200 hover:bg-blue-600 hover:text-white" />
-            </div>
-          </Carousel>
+          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:mt-12 lg:grid-cols-3">
+            {sections.map((section) => (
+              <SectionCard key={section.id} section={section} sections={sections} services={services || []} />
+            ))}
+          </div>
         )}
       </section>
 
-      {/* COMMITMENT BANNER */}
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8 lg:pb-24">
-        <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-[#0d1627] px-6 py-10 text-white shadow-2xl sm:px-10 sm:py-12 lg:grid lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-14 lg:px-14">
-          <div className="absolute -right-24 -top-32 h-80 w-80 rounded-full bg-blue-600/15 blur-3xl" />
+        <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-white px-6 py-10 text-slate-900 shadow-lg sm:px-10 sm:py-12 lg:grid lg:grid-cols-[0.85fr_1.15fr] lg:items-center lg:gap-14 lg:px-14">
           <div className="relative">
-            <div className="text-xs font-bold uppercase tracking-widest text-amber-400">
-              Firm Commitment
+            <div className="text-xs font-bold uppercase tracking-widest text-blue-600">
+              How this works
             </div>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-white sm:text-4xl">What’s always included</h2>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-300">
-              Every consultation at our chambers includes structured legal review and actionable counsel.
+            <h2 className="mt-3 font-serif text-3xl font-semibold text-slate-900 sm:text-4xl">
+              Service section, then specific service, then lawyer
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-slate-600">
+              Each specific service keeps the existing lawyer assignment flow, so the consultation
+              booking still starts from the exact service the client needs.
             </p>
           </div>
           <ul className="relative mt-8 grid gap-3.5 sm:grid-cols-2 lg:mt-0">
             {[
-              "In-depth legal case analysis",
-              "Documented strategy & next steps",
-              "Clear professional advice",
-              "Transparent, upfront fee schedule",
-            ].map((promise) => (
+              "Open the service section",
+              "Choose the specific service",
+              "Review specialized lawyers",
+              "Continue to consultation",
+            ].map((step) => (
               <li
-                key={promise}
-                className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3.5 text-sm font-medium text-slate-200 backdrop-blur"
+                key={step}
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-800"
               >
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-900/60 border border-blue-600/40 text-blue-400">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-100 border border-blue-200 text-blue-600">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
                 </span>
-                {promise}
+                {step}
               </li>
             ))}
           </ul>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
-function ServiceCard({ service, index }: { service: DBService; index: number }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const Icon = getServiceIcon(service.name);
-  const serviceImages = getServiceImageList(service as unknown as Record<string, unknown>).map(
-    (src, imageIndex) => ({
-      src,
-      alt: imageIndex === 0 ? service.name : `${service.name} image ${imageIndex + 1}`,
-    }),
-  );
-  const description =
-    service.description?.trim() ||
-    "A focused, lawyer-led service providing strategic legal advice and clear representation.";
+function SectionCard({
+  section,
+  sections,
+  services,
+}: {
+  section: {
+    id: string;
+    name: string;
+    slug?: string | null;
+    description?: string | null;
+  };
+  sections: { id: string; name: string; slug?: string | null }[];
+  services: { id: string; name: string; slug?: string | null; section_id?: string | null }[];
+}) {
+  const Icon = getServiceIcon(section.name);
+  const slug = getServiceSectionPathSlug(section, sections, services);
+  const serviceCount = services.filter((service) => service.section_id === section.id).length;
+  const summary = section.description?.trim() || "Open this practice area to see the specific services inside it.";
 
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} asChild>
-      <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-800 bg-[#121b2d] text-slate-100 shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-blue-600/50 hover:shadow-2xl">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-amber-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        {serviceImages.length > 0 && (
-          <div className="aspect-[16/10] border-b border-slate-800 bg-slate-950">
-            <ImageCarousel
-              images={serviceImages}
-              label={`${service.name} image gallery`}
-              className="h-full"
-              frameClassName="p-3"
-              imageClassName="rounded-xl"
-              emptyLabel="Service image coming soon"
-            />
-          </div>
-        )}
-        <div className="min-w-0 flex-1 p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-blue-950 border border-blue-600/40 text-blue-400 transition-all duration-300 group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white">
-              <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
-            </div>
-            <span className="pt-1 text-xs font-bold uppercase tracking-widest text-slate-500">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-          </div>
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white text-slate-900 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-slate-300 hover:shadow-xl">
+      <Link
+        to="/services/$serviceSlug"
+        params={{ serviceSlug: slug }}
+        className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 rounded-xl"
+        aria-label={`Open ${section.name} section`}
+      />
 
-          <div className="mt-6 min-w-0">
-            <h3 className="min-w-0 font-serif text-xl font-bold leading-snug text-white [overflow-wrap:anywhere]">
-              {service.name}
-            </h3>
-            <p
-              className={`mt-3 min-w-0 break-words text-sm leading-relaxed text-slate-300 [overflow-wrap:anywhere] ${
-                isOpen ? "" : "max-h-[3.75rem] overflow-hidden"
-              }`}
-            >
-              {description}
-            </p>
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col p-6 pointer-events-none">
+        <div className="flex items-start justify-between gap-4">
+          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-blue-50 border border-blue-100 text-blue-600">
+            <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
           </div>
-
-          <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
-            <div className="mt-4 rounded-xl border border-slate-800 bg-slate-900/80 p-4">
-              <div className="flex items-start gap-2.5 text-xs leading-relaxed text-slate-300">
-                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-blue-400" aria-hidden="true" />
-                <span>
-                  Includes advocate consultation, legal document review, and case strategy formulation.
-                </span>
-              </div>
-            </div>
-          </CollapsibleContent>
-
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-              aria-label={`${isOpen ? "Hide" : "View"} details for ${service.name}`}
-            >
-              {isOpen ? "Hide Details" : "View Details"}
-              <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
-                aria-hidden="true"
-              />
-            </button>
-          </CollapsibleTrigger>
+          <span className="min-w-0 max-w-[45%] break-words text-right text-xs font-semibold uppercase tracking-wider text-blue-600">
+            {serviceCount} services
+          </span>
         </div>
 
-        <div className="flex items-center justify-between gap-4 border-t border-slate-800 bg-slate-900/60 px-6 py-4">
-          <div className="min-w-0">
-            <div className="text-[0.65rem] font-bold uppercase tracking-widest text-slate-400">
-              Consultation Fee
-            </div>
-            <div className="mt-0.5 break-words font-serif text-xl font-bold text-blue-400 [overflow-wrap:anywhere]">
-              {service.price}
-            </div>
-          </div>
-          <Button
-            asChild
-            className="bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg px-4"
+        <h3 className="mt-5 min-w-0 font-serif text-xl font-semibold leading-snug text-slate-900">
+          <Link
+            to="/services/$serviceSlug"
+            params={{ serviceSlug: slug }}
+            className="pointer-events-auto transition-colors hover:text-blue-600"
           >
-            <Link to="/appointment" search={{ service: service.id }}>
-              Book Now
-              <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden="true" />
+            {section.name}
+          </Link>
+        </h3>
+        <p className="mt-3 min-w-0 flex-1 text-sm leading-relaxed text-slate-600">
+          {summary}
+        </p>
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center pointer-events-auto">
+          <Button asChild className="min-h-11 flex-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 shadow-sm">
+            <Link to="/services/$serviceSlug" params={{ serviceSlug: slug }}>
+              View section
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
         </div>
-      </article>
-    </Collapsible>
+      </div>
+    </article>
   );
 }
 
-function getServiceIcon(name: string): LucideIcon {
-  const normalizedName = name.toLowerCase();
-
-  if (/(property|real estate|land|housing)/.test(normalizedName)) return Landmark;
-  if (/(family|divorce|custody|marriage)/.test(normalizedName)) return BookOpen;
-  if (/(corporate|business|company|commercial)/.test(normalizedName)) return Briefcase;
-  if (/(criminal|defence|defense|bail)/.test(normalizedName)) return Gavel;
-  if (/(civil|litigation|dispute|arbitration)/.test(normalizedName)) return Scale;
-  if (/(document|draft|contract|agreement|registration)/.test(normalizedName)) return FileText;
-
-  return Scale;
-}
-
-function ServicesSkeleton() {
+function SectionsSkeleton() {
   return (
     <div className="mt-10 grid gap-5 md:grid-cols-2 lg:mt-12 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+        <div key={i} className="overflow-hidden rounded-xl border border-[var(--site-border)] bg-[var(--site-bg-card)]">
           <div className="space-y-5 p-6">
-            <div className="flex justify-between">
-              <Skeleton className="h-12 w-12 rounded-xl bg-slate-800" />
-            </div>
+            <Skeleton className="h-12 w-12 rounded-lg bg-slate-800" />
             <Skeleton className="h-6 w-2/3 bg-slate-800" />
             <Skeleton className="h-4 w-full bg-slate-800" />
           </div>
@@ -333,7 +250,7 @@ function ServicesSkeleton() {
 function ErrorState({ message, retry }: { message: string; retry: () => void }) {
   return (
     <div className="mt-12 p-8 rounded-xl bg-red-950/20 border border-red-900/50 text-center max-w-xl mx-auto text-slate-200">
-      <p className="text-red-400 font-medium">Failed to load legal services</p>
+      <p className="text-red-400 font-medium">Failed to load legal service sections</p>
       <p className="text-sm text-slate-400 mt-1">{message}</p>
       <Button variant="outline" size="sm" className="mt-4 border-slate-700 bg-slate-900" onClick={retry}>
         Try Again

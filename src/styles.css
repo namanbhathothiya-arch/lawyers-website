@@ -32,46 +32,68 @@
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
-  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-editorial: "DM Serif Display", ui-serif, Georgia, serif;
+  --font-display: "Playfair Display", "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-editorial: "Cormorant Garamond", "Playfair Display", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.21 0.04 250);
+  --foreground: oklch(0.21 0.03 250);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.21 0.04 250);
+  --card-foreground: oklch(0.21 0.03 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.04 250);
-  --primary: oklch(0.52 0.18 250);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-light: oklch(0.95 0.04 250);
-  --secondary: oklch(0.97 0.02 250);
-  --secondary-foreground: oklch(0.3 0.08 250);
-  --muted: oklch(0.97 0.01 250);
-  --muted-foreground: oklch(0.5 0.03 250);
-  --accent: oklch(0.94 0.05 220);
-  --accent-foreground: oklch(0.3 0.1 250);
+  --popover-foreground: oklch(0.21 0.03 250);
+  --primary: oklch(0.36 0.08 250);
+  --primary-foreground: oklch(0.99 0.01 90);
+  --primary-light: oklch(0.94 0.02 250);
+  --secondary: oklch(0.96 0.01 90);
+  --secondary-foreground: oklch(0.28 0.04 250);
+  --muted: oklch(0.96 0.01 90);
+  --muted-foreground: oklch(0.48 0.02 250);
+  --accent: oklch(0.86 0.08 85);
+  --accent-foreground: oklch(0.22 0.04 70);
   --destructive: oklch(0.58 0.22 27);
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.62 0.16 155);
   --success-foreground: oklch(0.99 0 0);
-  --border: oklch(0.92 0.01 250);
-  --input: oklch(0.92 0.01 250);
-  --ring: oklch(0.52 0.18 250);
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #2563EB;
+
+  --site-bg: #F8FAFC;
+  --site-bg-card: #FFFFFF;
+  --site-bg-card-hover: #F8FAFC;
+  --site-bg-elevated: #F1F5F9;
+  --site-border: #E2E8F0;
+  --site-border-hover: #CBD5E1;
+  --site-gold: #c4a574;
+  --site-gold-light: #e2d0a8;
+  --site-ink: #0F172A;
+  --site-muted: #475569;
 }
 
 @layer base {
   * {
-    border-color: var(--color-border);
+    border-color: var(--site-border);
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    background-color: var(--site-bg);
+    color: var(--site-ink);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1,
   h2,
@@ -79,13 +101,19 @@
   h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
+    color: var(--site-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--site-gold);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 }
 
 @keyframes hero-fade-up {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -93,75 +121,130 @@
   }
 }
 
-@keyframes hero-card-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
 @layer utilities {
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 80;
+    border-radius: 0.5rem;
+    background: var(--site-gold);
+    color: #1a140c;
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .skip-link:focus {
+    top: 0.75rem;
+  }
+
   .testimonial-section {
-    background: linear-gradient(
-      135deg,
-      oklch(0.985 0.012 230) 0%,
-      var(--color-background) 52%,
-      oklch(0.965 0.035 205) 100%
-    );
+    background: #090b10;
   }
 
   .testimonial-grid {
     background-image:
-      linear-gradient(
-        to right,
-        color-mix(in oklab, var(--color-primary) 4%, transparent) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        color-mix(in oklab, var(--color-primary) 4%, transparent) 1px,
-        transparent 1px
-      );
-    background-size: 64px 64px;
+      linear-gradient(to right, rgba(196, 165, 116, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(196, 165, 116, 0.05) 1px, transparent 1px);
+    background-size: 72px 72px;
     mask-image: linear-gradient(to bottom, black, transparent 90%);
   }
 
   .private-hero {
-    background: linear-gradient(
-      120deg,
-      oklch(0.985 0.012 230) 0%,
-      var(--color-background) 48%,
-      oklch(0.965 0.035 205) 100%
-    );
+    background: #03142B;
   }
 
   .private-hero-grid {
     background-image:
-      linear-gradient(
-        to right,
-        color-mix(in oklab, var(--color-primary) 5%, transparent) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        color-mix(in oklab, var(--color-primary) 5%, transparent) 1px,
-        transparent 1px
-      );
-    background-size: 72px 72px;
-    mask-image: linear-gradient(to bottom, black, transparent 82%);
+      linear-gradient(to right, rgba(196, 165, 116, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(196, 165, 116, 0.05) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: linear-gradient(to bottom, black, transparent 78%);
   }
 
   .hero-display {
     font-family: var(--font-editorial);
-    font-weight: 400;
-    letter-spacing: -0.035em;
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+
+  .font-serif-display {
+    font-family: var(--font-editorial);
+    font-weight: 500;
+  }
+
+  .text-gold {
+    color: var(--site-gold);
+  }
+
+  .divider-glow {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(196, 165, 116, 0.55), transparent);
+  }
+
+  .card-premium {
+    background: var(--site-bg-card);
+    border: 1px solid var(--site-border);
+    border-radius: 0.85rem;
+    transition: border-color 240ms ease, box-shadow 240ms ease, transform 240ms ease;
+  }
+  .card-premium:hover {
+    border-color: var(--site-border-hover);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(196, 165, 116, 0.08);
+    transform: translateY(-2px);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    background: #1f3d5a;
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    padding: 0 1.4rem;
+    font-size: 0.9375rem;
+    letter-spacing: -0.01em;
+    transition: background 200ms ease, box-shadow 200ms ease, transform 150ms ease;
+    box-shadow: 0 8px 20px rgba(15, 35, 55, 0.35);
+  }
+  .btn-primary:hover {
+    background: #274c6e;
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--site-gold);
+  }
+
+  .card-accent-bar {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--site-gold), #8b6b3a);
+    border-radius: 0.85rem 0.85rem 0 0;
+    opacity: 0;
+    transition: opacity 240ms ease;
+  }
+  .group:hover .card-accent-bar {
+    opacity: 1;
   }
 
   .hero-enter {
-    animation: hero-fade-up 620ms ease-out both;
+    animation: hero-fade-up 560ms ease-out both;
   }
 
   .hero-enter-delay {
@@ -169,15 +252,15 @@
   }
 
   .hero-enter-late {
-    animation-delay: 220ms;
+    animation-delay: 180ms;
   }
 
   .hero-doctor-card {
-    animation: hero-fade-up 700ms 360ms ease-out both;
+    animation: hero-fade-up 640ms 280ms ease-out both;
   }
 
   .hero-stat {
-    animation: hero-fade-up 560ms var(--hero-delay, 320ms) ease-out both;
+    animation: hero-fade-up 520ms var(--hero-delay, 280ms) ease-out both;
   }
 
   .hero-stat:nth-child(even) {
@@ -190,18 +273,20 @@
   .hero-enter-delay,
   .hero-enter-late,
   .hero-doctor-card,
-  .hero-stat {
+  .hero-stat,
+  .card-premium {
+    animation: none;
+    transition: none;
+  }
+  .card-premium:hover {
+    transform: none;
+  }
+  .animate-ping {
     animation: none;
   }
 }
 
 @media (min-width: 1024px) {
-  .hero-doctor-card {
-    animation:
-      hero-fade-up 700ms 360ms ease-out both,
-      hero-card-float 5s 1.2s ease-in-out infinite;
-  }
-
   .hero-stat + .hero-stat {
     border-left-width: 1px;
   }

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { getDoctorImage, LAW_FIRM } from "@/lib/clinic-data";
 import { useLawyers } from "@/hooks/use-supabase-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DoctorProfileCard } from "@/components/DoctorProfileCard";
+import { getLawyerDirectContact } from "@/lib/lawyer-contact";
 
 export const Route = createFileRoute("/doctors")({
   head: () => ({
@@ -24,8 +25,15 @@ export const Route = createFileRoute("/doctors")({
     ],
     links: [{ rel: "canonical", href: "https://sharmalaw.in/doctors" }],
   }),
-  component: DoctorsPage,
+  component: DoctorsRoute,
 });
+
+function DoctorsRoute() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isProfile = pathname !== "/doctors" && pathname.startsWith("/doctors/");
+  if (isProfile) return <Outlet />;
+  return <DoctorsPage />;
+}
 
 function DoctorsPage() {
   const { data: lawyers, isLoading, isError, error, refetch } = useLawyers();
@@ -34,62 +42,71 @@ function DoctorsPage() {
     if (!lawyers) return null;
     return {
       "@context": "https://schema.org",
-      "@graph": lawyers.map((d) => ({
+      "@graph": lawyers.map((d) => {
+        const contact = getLawyerDirectContact(d as unknown as Record<string, unknown>);
+        return {
         "@type": "Person",
         "@id": `https://sharmalaw.in/doctors#${d.id}`,
         name: d.name,
         image: getDoctorImage(d.id, d.photo),
         jobTitle: d.specialization,
         description: d.bio || `Advocate at ${LAW_FIRM.name}`,
-        telephone: LAW_FIRM.phone,
+        ...(contact.hasPhone ? { telephone: contact.phoneDisplay } : {}),
         worksFor: {
           "@type": "LegalService",
           name: LAW_FIRM.name,
           address: LAW_FIRM.address,
         },
-      })),
+      };
+      }),
     };
   }, [lawyers]);
 
   return (
-    <section className="relative overflow-hidden py-16 sm:py-24 bg-[#070c14] text-slate-100">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top_left,rgba(37,99,235,0.15),transparent_58%)]" />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        {lawyersSchema && (
-          <script type="application/ld+json">{JSON.stringify(lawyersSchema)}</script>
-        )}
-        <div className="max-w-3xl">
-          <div className="text-xs font-bold uppercase tracking-widest text-blue-400">Our Legal Advocates</div>
-          <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Legal Expertise You Can Trust.
-            <span className="block text-blue-500 mt-1">Counsel You Can Rely On.</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-            Experienced legal practitioners offering focused advice, thorough preparation, and court representation.
-          </p>
-        </div>
+    <div className="bg-[#F8FAFC] text-slate-900 min-h-screen">
+      {lawyersSchema && (
+        <script type="application/ld+json">{JSON.stringify(lawyersSchema)}</script>
+      )}
 
-        {isLoading ? (
-          <DoctorsSkeleton />
-        ) : isError ? (
-          <ErrorState message={error?.message || "Unknown error"} retry={refetch} />
-        ) : !lawyers || lawyers.length === 0 ? (
-          <EmptyState
-            title="No lawyers listed"
-            description="There are no lawyers configured in the database yet."
-          />
-        ) : (
-          <>
-            <h2 className="sr-only">Lawyers List</h2>
-            <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {lawyers.map((d) => (
-                <DoctorProfileCard key={d.id} doctor={d} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </section>
+      <section className="relative overflow-hidden py-16 sm:py-20 bg-[#0B1630] text-white border-b border-slate-800">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <div className="eyebrow border-blue-400/30 bg-white/[0.05] text-blue-300">Our advocates</div>
+            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Meet the lawyers who will work on your matter.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+              Review each advocate’s practice focus, experience, and profile. Contact details on a
+              profile belong to that lawyer — not a shared firm number.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {isLoading ? (
+            <DoctorsSkeleton />
+          ) : isError ? (
+            <ErrorState message={error?.message || "Unknown error"} retry={refetch} />
+          ) : !lawyers || lawyers.length === 0 ? (
+            <EmptyState
+              title="No lawyers listed"
+              description="There are no lawyers configured in the database yet."
+            />
+          ) : (
+            <>
+              <h2 className="sr-only">Lawyers List</h2>
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                {lawyers.map((d) => (
+                  <DoctorProfileCard key={d.id} doctor={d} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 

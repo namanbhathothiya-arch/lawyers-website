@@ -18,9 +18,12 @@ import { Route as AppointmentRouteImport } from './routes/appointment'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as ServicesServiceSlugRouteImport } from './routes/services.$serviceSlug'
+import { Route as DoctorsLawyerIdRouteImport } from './routes/doctors.$lawyerId'
 import { Route as AdminTestimonialsRouteImport } from './routes/admin/testimonials'
 import { Route as AdminStaffRouteImport } from './routes/admin/staff'
 import { Route as AdminServicesRouteImport } from './routes/admin/services'
+import { Route as AdminServiceSectionsRouteImport } from './routes/admin/service-sections'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminHolidaysRouteImport } from './routes/admin/holidays'
 import { Route as AdminGalleryRouteImport } from './routes/admin/gallery'
@@ -28,6 +31,7 @@ import { Route as AdminFaqsRouteImport } from './routes/admin/faqs'
 import { Route as AdminDoctorsRouteImport } from './routes/admin/doctors'
 import { Route as AdminAvailabilityRouteImport } from './routes/admin/availability'
 import { Route as AdminAppointmentsRouteImport } from './routes/admin/appointments'
+import { Route as AdminServiceSectionsSectionIdRouteImport } from './routes/admin/service-sections.$sectionId'
 
 const StaffRoute = StaffRouteImport.update({
   id: '/staff',
@@ -74,6 +78,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesServiceSlugRoute = ServicesServiceSlugRouteImport.update({
+  id: '/$serviceSlug',
+  path: '/$serviceSlug',
+  getParentRoute: () => ServicesRoute,
+} as any)
+const DoctorsLawyerIdRoute = DoctorsLawyerIdRouteImport.update({
+  id: '/$lawyerId',
+  path: '/$lawyerId',
+  getParentRoute: () => DoctorsRoute,
+} as any)
 const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
   id: '/admin/testimonials',
   path: '/admin/testimonials',
@@ -87,6 +101,11 @@ const AdminStaffRoute = AdminStaffRouteImport.update({
 const AdminServicesRoute = AdminServicesRouteImport.update({
   id: '/admin/services',
   path: '/admin/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminServiceSectionsRoute = AdminServiceSectionsRouteImport.update({
+  id: '/admin/service-sections',
+  path: '/admin/service-sections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -124,15 +143,21 @@ const AdminAppointmentsRoute = AdminAppointmentsRouteImport.update({
   path: '/admin/appointments',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminServiceSectionsSectionIdRoute =
+  AdminServiceSectionsSectionIdRouteImport.update({
+    id: '/$sectionId',
+    path: '/$sectionId',
+    getParentRoute: () => AdminServiceSectionsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
-  '/doctors': typeof DoctorsRoute
+  '/doctors': typeof DoctorsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/services': typeof ServicesRoute
+  '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
@@ -141,19 +166,23 @@ export interface FileRoutesByFullPath {
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
+  '/doctors/$lawyerId': typeof DoctorsLawyerIdRoute
+  '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/service-sections/$sectionId': typeof AdminServiceSectionsSectionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
-  '/doctors': typeof DoctorsRoute
+  '/doctors': typeof DoctorsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/services': typeof ServicesRoute
+  '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
@@ -162,10 +191,14 @@ export interface FileRoutesByTo {
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
+  '/doctors/$lawyerId': typeof DoctorsLawyerIdRoute
+  '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/service-sections/$sectionId': typeof AdminServiceSectionsSectionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,9 +206,9 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
-  '/doctors': typeof DoctorsRoute
+  '/doctors': typeof DoctorsRouteWithChildren
   '/gallery': typeof GalleryRoute
-  '/services': typeof ServicesRoute
+  '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/appointments': typeof AdminAppointmentsRoute
   '/admin/availability': typeof AdminAvailabilityRoute
@@ -184,10 +217,14 @@ export interface FileRoutesById {
   '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
   '/admin/services': typeof AdminServicesRoute
   '/admin/staff': typeof AdminStaffRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
+  '/doctors/$lawyerId': typeof DoctorsLawyerIdRoute
+  '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/service-sections/$sectionId': typeof AdminServiceSectionsSectionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -207,10 +244,14 @@ export interface FileRouteTypes {
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
+    | '/admin/service-sections'
     | '/admin/services'
     | '/admin/staff'
     | '/admin/testimonials'
+    | '/doctors/$lawyerId'
+    | '/services/$serviceSlug'
     | '/admin/'
+    | '/admin/service-sections/$sectionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -228,10 +269,14 @@ export interface FileRouteTypes {
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
+    | '/admin/service-sections'
     | '/admin/services'
     | '/admin/staff'
     | '/admin/testimonials'
+    | '/doctors/$lawyerId'
+    | '/services/$serviceSlug'
     | '/admin'
+    | '/admin/service-sections/$sectionId'
   id:
     | '__root__'
     | '/'
@@ -249,10 +294,14 @@ export interface FileRouteTypes {
     | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
+    | '/admin/service-sections'
     | '/admin/services'
     | '/admin/staff'
     | '/admin/testimonials'
+    | '/doctors/$lawyerId'
+    | '/services/$serviceSlug'
     | '/admin/'
+    | '/admin/service-sections/$sectionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,9 +309,9 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AppointmentRoute: typeof AppointmentRoute
   ContactRoute: typeof ContactRoute
-  DoctorsRoute: typeof DoctorsRoute
+  DoctorsRoute: typeof DoctorsRouteWithChildren
   GalleryRoute: typeof GalleryRoute
-  ServicesRoute: typeof ServicesRoute
+  ServicesRoute: typeof ServicesRouteWithChildren
   StaffRoute: typeof StaffRoute
   AdminAppointmentsRoute: typeof AdminAppointmentsRoute
   AdminAvailabilityRoute: typeof AdminAvailabilityRoute
@@ -271,6 +320,7 @@ export interface RootRouteChildren {
   AdminGalleryRoute: typeof AdminGalleryRoute
   AdminHolidaysRoute: typeof AdminHolidaysRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminServiceSectionsRoute: typeof AdminServiceSectionsRouteWithChildren
   AdminServicesRoute: typeof AdminServicesRoute
   AdminStaffRoute: typeof AdminStaffRoute
   AdminTestimonialsRoute: typeof AdminTestimonialsRoute
@@ -342,6 +392,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/$serviceSlug': {
+      id: '/services/$serviceSlug'
+      path: '/$serviceSlug'
+      fullPath: '/services/$serviceSlug'
+      preLoaderRoute: typeof ServicesServiceSlugRouteImport
+      parentRoute: typeof ServicesRoute
+    }
+    '/doctors/$lawyerId': {
+      id: '/doctors/$lawyerId'
+      path: '/$lawyerId'
+      fullPath: '/doctors/$lawyerId'
+      preLoaderRoute: typeof DoctorsLawyerIdRouteImport
+      parentRoute: typeof DoctorsRoute
+    }
     '/admin/testimonials': {
       id: '/admin/testimonials'
       path: '/admin/testimonials'
@@ -361,6 +425,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/services'
       fullPath: '/admin/services'
       preLoaderRoute: typeof AdminServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/service-sections': {
+      id: '/admin/service-sections'
+      path: '/admin/service-sections'
+      fullPath: '/admin/service-sections'
+      preLoaderRoute: typeof AdminServiceSectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -412,17 +483,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAppointmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/service-sections/$sectionId': {
+      id: '/admin/service-sections/$sectionId'
+      path: '/$sectionId'
+      fullPath: '/admin/service-sections/$sectionId'
+      preLoaderRoute: typeof AdminServiceSectionsSectionIdRouteImport
+      parentRoute: typeof AdminServiceSectionsRoute
+    }
   }
 }
+
+interface DoctorsRouteChildren {
+  DoctorsLawyerIdRoute: typeof DoctorsLawyerIdRoute
+}
+
+const DoctorsRouteChildren: DoctorsRouteChildren = {
+  DoctorsLawyerIdRoute: DoctorsLawyerIdRoute,
+}
+
+const DoctorsRouteWithChildren =
+  DoctorsRoute._addFileChildren(DoctorsRouteChildren)
+
+interface ServicesRouteChildren {
+  ServicesServiceSlugRoute: typeof ServicesServiceSlugRoute
+}
+
+const ServicesRouteChildren: ServicesRouteChildren = {
+  ServicesServiceSlugRoute: ServicesServiceSlugRoute,
+}
+
+const ServicesRouteWithChildren = ServicesRoute._addFileChildren(
+  ServicesRouteChildren,
+)
+
+interface AdminServiceSectionsRouteChildren {
+  AdminServiceSectionsSectionIdRoute: typeof AdminServiceSectionsSectionIdRoute
+}
+
+const AdminServiceSectionsRouteChildren: AdminServiceSectionsRouteChildren = {
+  AdminServiceSectionsSectionIdRoute: AdminServiceSectionsSectionIdRoute,
+}
+
+const AdminServiceSectionsRouteWithChildren =
+  AdminServiceSectionsRoute._addFileChildren(AdminServiceSectionsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AppointmentRoute: AppointmentRoute,
   ContactRoute: ContactRoute,
-  DoctorsRoute: DoctorsRoute,
+  DoctorsRoute: DoctorsRouteWithChildren,
   GalleryRoute: GalleryRoute,
-  ServicesRoute: ServicesRoute,
+  ServicesRoute: ServicesRouteWithChildren,
   StaffRoute: StaffRoute,
   AdminAppointmentsRoute: AdminAppointmentsRoute,
   AdminAvailabilityRoute: AdminAvailabilityRoute,
@@ -431,6 +543,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminGalleryRoute: AdminGalleryRoute,
   AdminHolidaysRoute: AdminHolidaysRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminServiceSectionsRoute: AdminServiceSectionsRouteWithChildren,
   AdminServicesRoute: AdminServicesRoute,
   AdminStaffRoute: AdminStaffRoute,
   AdminTestimonialsRoute: AdminTestimonialsRoute,

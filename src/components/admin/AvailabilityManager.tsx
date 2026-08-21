@@ -377,7 +377,7 @@ export function AvailabilityManager() {
             <AlertDialogTitle className="text-lg font-bold">
               Remove schedule block?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-muted-foreground">
+            <AlertDialogDescription className="text-sm text-foreground/70">
               Are you sure you want to remove the weekly schedule block for{" "}
               <span className="font-semibold text-foreground">{deleteDetails}</span>? This will
               clear their default bookings availability for this day of the week.

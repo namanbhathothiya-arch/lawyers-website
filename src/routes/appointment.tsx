@@ -1,7 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, CheckCircle2, RefreshCw, Scale, ShieldCheck } from "lucide-react";
+import {
+  CalendarIcon,
+  CheckCircle2,
+  ChevronRight,
+  RefreshCw,
+  Scale,
+  ShieldCheck,
+} from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +31,7 @@ import {
   useLawyerUnavailability,
   useLawyerIdsForService,
   useLawyers,
+  useServiceSections,
   useLegalServices,
 } from "@/hooks/use-supabase-data";
 import { supabase } from "@/lib/supabase";
@@ -36,6 +44,7 @@ import {
   normalizeIndianPhone,
   resetLawyerSelectionForServiceChange,
 } from "@/lib/booking-utils";
+import { getServicePathSlug } from "@/lib/service-slug";
 
 type RazorpaySuccessResponse = {
   razorpay_payment_id: string;
@@ -90,6 +99,9 @@ function AppointmentPage() {
   const queryClient = useQueryClient();
   const { data: lawyers, isLoading: loadingLawyers, isError: errorLawyers } = useLawyers();
   const { data: services, isLoading: loadingServices, isError: errorServices } = useLegalServices();
+  const { data: sections } = useServiceSections();
+  const selectedService = services?.find((item) => item.id === search.service);
+  const selectedLawyer = lawyers?.find((item) => item.id === (search.lawyer || search.doctor));
 
   const [lawyer, setLawyer] = useState<string>(search.lawyer || search.doctor || "");
   const [service, setService] = useState<string>(search.service ?? "");
@@ -215,7 +227,7 @@ function AppointmentPage() {
         description: `Booking: ${serviceName} with ${lawyerName}`,
         order_id: order_id,
         theme: {
-          color: "#2563EB",
+          color: "#C9A15A",
         },
         prefill: {
           name,
@@ -299,20 +311,20 @@ function AppointmentPage() {
 
   if (done) {
     return (
-      <main className="bg-[#070c14] text-slate-100 min-h-screen flex items-center justify-center py-20 px-4">
-        <Card className="max-w-xl w-full border-slate-800 bg-[#121b2d] text-slate-100 shadow-2xl rounded-2xl">
+      <div className="bg-[#05070B] text-[#F7F5EF] min-h-screen flex items-center justify-center py-20 px-4">
+        <Card className="max-w-xl w-full border-[#263247] bg-[#0B1020] text-[#F7F5EF] shadow-2xl rounded-xl">
           <CardContent className="p-8 sm:p-10 text-center">
-            <div className="mx-auto h-16 w-16 rounded-full bg-blue-950 border border-blue-600/40 text-blue-400 grid place-items-center">
-              <CheckCircle2 className="h-8 w-8" />
+            <div className="mx-auto h-16 w-16 rounded-full bg-[#C9A15A]/10 border border-[#C9A15A]/30 text-[#22C55E] grid place-items-center">
+              <CheckCircle2 className="h-8 w-8 text-[#22C55E]" />
             </div>
-            <h1 className="mt-5 font-serif text-3xl font-bold text-white">Consultation Confirmed</h1>
-            <p className="mt-3 text-sm leading-relaxed text-slate-300">
-              Thank you, <strong className="text-white">{name}</strong>. Your legal consultation has been booked for{" "}
-              <strong className="text-white">{date && format(date, "PPP")}</strong> at <strong className="text-white">{slot}</strong>.
-              Our chambers will contact you at <strong className="text-white">{phone}</strong> with meeting details.
+            <h1 className="mt-5 font-serif text-3xl font-bold text-[#F7F5EF]">Consultation Confirmed</h1>
+            <p className="mt-3 text-sm leading-relaxed text-[#9AAAC0]">
+              Thank you, <strong className="text-[#F7F5EF]">{name}</strong>. Your legal consultation has been booked for{" "}
+              <strong className="text-[#F7F5EF]">{date && format(date, "PPP")}</strong> at <strong className="text-[#F7F5EF]">{slot}</strong>.
+              Our chambers will contact you at <strong className="text-[#F7F5EF]">{phone}</strong> with meeting details.
             </p>
             <Button
-              className="mt-8 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl px-6"
+              className="mt-8 bg-[#F7F5EF] hover:bg-white text-[#05070B] font-bold rounded-lg px-6 transition-all duration-200 hover:-translate-y-0.5"
               onClick={() => {
                 setDone(false);
                 setName("");
@@ -326,25 +338,59 @@ function AppointmentPage() {
             </Button>
           </CardContent>
         </Card>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="bg-[#070c14] text-slate-100 min-h-screen py-16 sm:py-24">
+    <div className="bg-[#05070B] text-[#F7F5EF] min-h-screen py-16 sm:py-24">
       <section className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/25 bg-blue-950/60 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-blue-400">
-            <Scale className="h-3.5 w-3.5" />
-            Legal Consultation Booking
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#C9A15A]/30 bg-[#C9A15A]/10 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-widest text-[#C9A15A]">
+            <Scale className="h-3.5 w-3.5 text-[#C9A15A]" />
+            Legal consultation booking
           </div>
-          <h1 className="mt-4 font-serif text-4xl sm:text-5xl font-bold text-white">Book a Consultation</h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-400">
+          <h1 className="mt-4 font-serif text-4xl sm:text-5xl font-semibold text-[#F7F5EF]">Book a consultation</h1>
+          <p className="mt-3 text-sm leading-relaxed text-[#9AAAC0]">
             Select your required legal service, preferred advocate, and convenient consultation slot.
           </p>
         </div>
 
-        <Card className="mt-10 border-slate-800 bg-[#121b2d] text-slate-100 shadow-2xl rounded-2xl overflow-hidden">
+        {(selectedService || selectedLawyer) && (
+          <div className="mt-8 rounded-2xl border border-[#263247] bg-[#0B1020] px-5 py-4 shadow-2xl sm:px-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#C9A15A]">
+                  Booking context
+                </p>
+                <p className="mt-1 text-sm leading-relaxed text-[#9AAAC0]">
+                  {selectedService
+                    ? `Consultation will begin with ${selectedService.name} selected.`
+                    : "A consultation service can be selected to continue."}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {selectedService && (
+                  <Link
+                    to="/services/$serviceSlug"
+                    params={{ serviceSlug: getServicePathSlug(selectedService, services || [], sections || []) }}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#C9A15A]/30 bg-[#070A10] px-3 py-1.5 font-medium text-[#F7F5EF] transition-colors hover:border-[#C9A15A] hover:bg-[#0B1020]"
+                  >
+                    {selectedService.name}
+                    <ChevronRight className="h-3.5 w-3.5 text-[#C9A15A]" aria-hidden="true" />
+                  </Link>
+                )}
+                {selectedLawyer && (
+                  <span className="inline-flex items-center rounded-full border border-[#263247] bg-[#070A10] px-3 py-1.5 font-medium text-[#9AAAC0]">
+                    {selectedLawyer.name}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Card className="mt-10 border-[#263247] bg-[#0B1020] text-[#F7F5EF] shadow-2xl rounded-xl overflow-hidden">
           <CardContent className="p-6 sm:p-10">
             <form onSubmit={submit} className="space-y-6">
               <div className="grid sm:grid-cols-2 gap-6">
@@ -359,7 +405,7 @@ function AppointmentPage() {
                     }}
                     disabled={loadingServices || errorServices}
                   >
-                    <SelectTrigger id="booking-service" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                    <SelectTrigger id="booking-service" className="bg-[#070A10] border-[#263247] text-[#F7F5EF] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:text-[#718198] disabled:border-[#263247]/60 rounded-lg min-h-11 h-11">
                       <SelectValue
                         placeholder={
                           errorServices
@@ -370,9 +416,9 @@ function AppointmentPage() {
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                    <SelectContent className="bg-[#0B1020] border-[#263247] text-[#F7F5EF]">
                       {services?.map((s) => (
-                        <SelectItem key={s.id} value={s.id} className="focus:bg-slate-800 focus:text-white">
+                        <SelectItem key={s.id} value={s.id} className="focus:bg-[#162035] focus:text-[#F7F5EF] text-[#F7F5EF] cursor-pointer">
                           {s.name} · {s.price}
                         </SelectItem>
                       ))}
@@ -395,7 +441,7 @@ function AppointmentPage() {
                       filteredLawyers.length === 0
                     }
                   >
-                    <SelectTrigger id="booking-lawyer" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                    <SelectTrigger id="booking-lawyer" className="bg-[#070A10] border-[#263247] text-[#F7F5EF] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:text-[#718198] disabled:border-[#263247]/60 rounded-lg min-h-11 h-11">
                       <SelectValue
                         placeholder={
                           !service
@@ -410,16 +456,16 @@ function AppointmentPage() {
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                    <SelectContent className="bg-[#0B1020] border-[#263247] text-[#F7F5EF]">
                       {filteredLawyers.map((d) => (
-                        <SelectItem key={d.id} value={d.id} className="focus:bg-slate-800 focus:text-white">
+                        <SelectItem key={d.id} value={d.id} className="focus:bg-[#162035] focus:text-[#F7F5EF] text-[#F7F5EF] cursor-pointer">
                           {d.name} — {d.specialization}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {service && loadingServiceLawyers && (
-                    <p className="text-xs text-slate-400 mt-1.5">
+                    <p className="text-xs text-[#9AAAC0] mt-1.5">
                       Checking available advocates for this practice area...
                     </p>
                   )}
@@ -427,7 +473,7 @@ function AppointmentPage() {
                     !loadingServiceLawyers &&
                     !hasLawyerMappings &&
                     filteredLawyers.length > 0 && (
-                      <p className="text-xs text-slate-400 mt-1.5">
+                      <p className="text-xs text-[#9AAAC0] mt-1.5">
                         All active firm advocates are shown for this service.
                       </p>
                     )}
@@ -446,15 +492,15 @@ function AppointmentPage() {
                         type="button"
                         variant="outline"
                         className={cn(
-                          "w-full justify-start text-left font-normal bg-slate-900 border-slate-800 text-white rounded-xl h-11",
-                          !date && "text-slate-500",
+                          "w-full justify-start text-left font-normal bg-[#070A10] border-[#263247] text-[#F7F5EF] hover:bg-[#070A10] hover:text-[#F7F5EF] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] rounded-lg min-h-11 h-11",
+                          !date && "text-[#718198]",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4 text-blue-400" />
+                        <CalendarIcon className="mr-2 h-4 w-4 text-[#C9A15A]" />
                         {date ? format(date, "PPP") : "Pick a date"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-[#0f172a] border-slate-800 text-white" align="start">
+                    <PopoverContent className="w-auto p-0 bg-[#0B1020] border-[#263247] text-[#F7F5EF]" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
@@ -464,7 +510,7 @@ function AppointmentPage() {
                         }}
                         disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                         initialFocus
-                        className={cn("p-3 pointer-events-auto bg-[#0f172a] text-slate-100")}
+                        className="p-3 pointer-events-auto bg-[#0B1020] text-[#F7F5EF]"
                       />
                     </PopoverContent>
                   </Popover>
@@ -483,7 +529,7 @@ function AppointmentPage() {
                       loadingAvailability
                     }
                   >
-                    <SelectTrigger id="booking-slot" className="bg-slate-900 border-slate-800 text-white rounded-xl h-11">
+                    <SelectTrigger id="booking-slot" className="bg-[#070A10] border-[#263247] text-[#F7F5EF] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] disabled:text-[#718198] disabled:border-[#263247]/60 rounded-lg min-h-11 h-11">
                       <SelectValue
                         placeholder={
                           !lawyer || !date
@@ -496,12 +542,12 @@ function AppointmentPage() {
                         }
                       />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0f172a] border-slate-800 text-slate-100">
+                    <SelectContent className="bg-[#0B1020] border-[#263247] text-[#F7F5EF]">
                       {!isHoliday &&
                         slots.map((t) => {
                           const isBooked = bookedSlots?.includes(t);
                           return (
-                            <SelectItem key={t} value={t} disabled={isBooked} className="focus:bg-slate-800 focus:text-white">
+                            <SelectItem key={t} value={t} disabled={isBooked} className="focus:bg-[#162035] focus:text-[#F7F5EF] text-[#F7F5EF] cursor-pointer">
                               {t} {isBooked ? "— Booked" : ""}
                             </SelectItem>
                           );
@@ -516,7 +562,7 @@ function AppointmentPage() {
                 </Field>
               </div>
 
-              <div className="pt-2 border-t border-slate-800/80" />
+              <div className="pt-2 border-t border-[#263247]" />
 
               <div className="grid sm:grid-cols-2 gap-6">
                 <Field label="Client Full Name" id="booking-name">
@@ -525,7 +571,7 @@ function AppointmentPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your full legal name"
-                    className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                    className="bg-[#070A10] border-[#263247] text-[#F7F5EF] placeholder:text-[#718198] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] rounded-lg h-11"
                   />
                 </Field>
                 <Field label="Client Phone (India)" id="booking-phone">
@@ -535,7 +581,7 @@ function AppointmentPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+91 98765 43210"
-                    className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                    className="bg-[#070A10] border-[#263247] text-[#F7F5EF] placeholder:text-[#718198] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] rounded-lg h-11"
                   />
                   {phone && !isValidIndianPhone(phone) && (
                     <p className="text-xs text-red-400 mt-1">
@@ -551,38 +597,43 @@ function AppointmentPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@example.com"
-                      className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 rounded-xl h-11"
+                      className="bg-[#070A10] border-[#263247] text-[#F7F5EF] placeholder:text-[#718198] focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] rounded-lg h-11"
                     />
                   </Field>
                 </div>
               </div>
 
-              <Button type="submit" size="lg" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl h-12 text-base shadow-lg shadow-blue-950" disabled={loading}>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full bg-[#F7F5EF] hover:bg-white text-[#05070B] font-bold rounded-lg min-h-12 h-12 text-base shadow-xl transition-all duration-200 hover:-translate-y-0.5 border-0"
+                disabled={loading}
+              >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    <RefreshCw className="h-4 w-4 animate-spin text-[#05070B]" />
                     Launching Payment Gateway...
                   </span>
                 ) : (
                   "Proceed to Pay & Confirm Consultation"
                 )}
               </Button>
-              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-1">
-                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <div className="flex items-center justify-center gap-2 text-xs text-[#9AAAC0] pt-1">
+                <ShieldCheck className="h-4 w-4 text-[#C9A15A]" />
                 <span>Protected by Lawyer-Client Confidentiality & Razorpay SSL Security.</span>
               </div>
             </form>
           </CardContent>
         </Card>
       </section>
-    </main>
+    </div>
   );
 }
 
 function Field({ label, id, children }: { label: string; id: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-slate-300">{label}</Label>
+      <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-[#9AAAC0]">{label}</Label>
       {children}
     </div>
   );

@@ -287,7 +287,7 @@ export function HolidaysManager() {
         <AlertDialogContent className="bg-background border border-border">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg font-bold">Remove unavailability block?</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-muted-foreground">
+            <AlertDialogDescription className="text-sm text-foreground/70">
               Are you sure you want to remove the unavailability block for{" "}
               <span className="font-semibold text-foreground">{deleteDetails}</span>? This will make
               their slots available for client bookings on this date.
