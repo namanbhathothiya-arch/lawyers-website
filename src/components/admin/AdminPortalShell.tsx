@@ -6,6 +6,7 @@ import {
   CalendarOff,
   Clock,
   Image,
+  Info,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -28,6 +29,7 @@ const adminNav = [
   { to: "/admin/holidays", label: "Holidays", icon: CalendarOff },
   { to: "/admin/staff", label: "Staff", icon: UserCog },
   { to: "/admin/gallery", label: "Gallery", icon: Image },
+  { to: "/admin/about-us", label: "About Us", icon: Info },
   { to: "/admin/testimonials", label: "Testimonials", icon: MessageSquareQuote },
   { to: "/admin/faqs", label: "FAQs", icon: CircleHelp },
 ] as const;

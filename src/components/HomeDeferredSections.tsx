@@ -8,6 +8,7 @@ import { ClinicGallery } from "@/components/ClinicGallery";
 import { DoctorProfileCard } from "@/components/DoctorProfileCard";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FAQSection } from "@/components/FAQSection";
+import { HomeAboutSection } from "@/components/HomeAboutSection";
 import {
   Carousel,
   CarouselContent,
@@ -39,6 +40,8 @@ export function HomeDeferredSections() {
 
   return (
     <>
+      <HomeAboutSection />
+
       <section
         id="gallery"
         className="bg-[#F8FAFC] border-b border-slate-200 py-16 sm:py-20"
