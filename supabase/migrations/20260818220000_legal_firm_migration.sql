@@ -233,6 +233,8 @@ DROP POLICY IF EXISTS staff_select ON public.consultations;
 DROP POLICY IF EXISTS staff_update ON public.consultations;
 DROP POLICY IF EXISTS lawyer_select_own ON public.consultations;
 DROP POLICY IF EXISTS public_insert ON public.consultations;
+DROP POLICY IF EXISTS doctor_select_own ON public.consultations;
+DROP POLICY IF EXISTS staff_manage ON public.consultations;
 
 CREATE POLICY admin_all ON public.consultations FOR ALL TO authenticated USING (public.is_admin());
 CREATE POLICY staff_select ON public.consultations FOR SELECT TO authenticated USING (public.has_role('staff'));

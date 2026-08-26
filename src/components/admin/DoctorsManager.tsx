@@ -1,12 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
+  Archive,
+  ArchiveRestore,
   Briefcase,
   Check,
   Edit2,
   Image as ImageIcon,
   Loader2,
   Plus,
+  ShieldAlert,
   Sparkles,
   Trash2,
   Users,
@@ -14,9 +18,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { parseLawyerDeleteError } from "@/lib/supabase-errors";
 import { getLawyerImage } from "@/lib/clinic-data";
 import { cleanLawyerPhoto, isLegacyHeroLawyer, setLegacyHeroLawyer } from "@/lib/hero-content";
-import { getLawyerServiceSyncChanges, uniqueServiceIds } from "@/lib/doctor-service-utils";
+import { getLawyerServiceSyncChanges } from "@/lib/doctor-service-utils";
 
 type LawyerServiceMapping = {
   service_id: string;
@@ -32,6 +37,7 @@ type AdminLawyer = {
   phone_number?: string | null;
   whatsapp_number?: string | null;
   is_featured_hero?: boolean;
+  is_active?: boolean;
   lawyer_services?: LawyerServiceMapping[];
   doctor_services?: LawyerServiceMapping[];
 };
@@ -42,11 +48,29 @@ type LegalServiceOption = {
   price: string;
 };
 
+type DeleteModalState =
+  | {
+      step: "choice";
+      lawyer: AdminLawyer;
+    }
+  | {
+      step: "permanent_confirm";
+      lawyer: AdminLawyer;
+      checking: boolean;
+      consultationCount: number;
+      overrideErrorMessage?: string | null;
+    }
+  | null;
+
 export function DoctorsManager() {
   const queryClient = useQueryClient();
 
   const [editingLawyer, setEditingLawyer] = useState<AdminLawyer | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState<"active" | "archived" | "all">("active");
+
+  // Deletion / Archiving Dialog State
+  const [deleteModalState, setDeleteModalState] = useState<DeleteModalState>(null);
 
   // Form State
   const [name, setName] = useState("");
@@ -61,7 +85,7 @@ export function DoctorsManager() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Fetch Lawyers
+  // Fetch Lawyers (includes active and archived for admin portal)
   const {
     data: lawyers,
     isLoading,
@@ -169,19 +193,142 @@ export function DoctorsManager() {
     }
   }
 
-  const deleteMutation = useMutation({
+  // Opens Choice Modal ("Manage Lawyer Profile")
+  function handleOpenDeleteChoiceModal(lawyer: AdminLawyer) {
+    setDeleteModalState({
+      step: "choice",
+      lawyer,
+    });
+  }
+
+  // Option 1: Archive Lawyer
+  function handleSelectArchive(lawyer: AdminLawyer) {
+    archiveMutation.mutate(lawyer.id);
+  }
+
+  // Option 2: Delete Permanently -> Triggers Dependency Check & Confirmation Dialog
+  async function handleSelectDeletePermanently(lawyer: AdminLawyer) {
+    setDeleteModalState({
+      step: "permanent_confirm",
+      lawyer,
+      checking: true,
+      consultationCount: 0,
+    });
+
+    try {
+      const { count, error } = await supabase
+        .from("consultations")
+        .select("id", { count: "exact", head: true })
+        .eq("lawyer_id", lawyer.id);
+
+      if (error) {
+        const formattedErr = parseLawyerDeleteError(error);
+        setDeleteModalState({
+          step: "permanent_confirm",
+          lawyer,
+          checking: false,
+          consultationCount: -1,
+          overrideErrorMessage: `Database query error: ${formattedErr}. Permanent deletion decision stopped for safety.`,
+        });
+        return;
+      }
+
+      setDeleteModalState({
+        step: "permanent_confirm",
+        lawyer,
+        checking: false,
+        consultationCount: count ?? 0,
+      });
+    } catch (err) {
+      console.error("Error checking lawyer dependencies:", err);
+      const formattedErr = parseLawyerDeleteError(err);
+      setDeleteModalState({
+        step: "permanent_confirm",
+        lawyer,
+        checking: false,
+        consultationCount: -1,
+        overrideErrorMessage: `Database query error: ${formattedErr}. Permanent deletion decision stopped for safety.`,
+      });
+    }
+  }
+
+  const archiveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("lawyers").delete().eq("id", id);
+      const { error } = await supabase
+        .from("lawyers")
+        .update({ is_active: false, is_featured_hero: false })
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
       queryClient.invalidateQueries({ queryKey: ["lawyers"] });
       queryClient.invalidateQueries({ queryKey: ["hero-content"] });
-      toast.success("Lawyer removed successfully");
+      toast.success("Lawyer archived. Historical consultations remain intact.");
+      setDeleteModalState(null);
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete lawyer: ${error.message}`);
+    onError: (error: unknown) => {
+      const msg = parseLawyerDeleteError(error);
+      toast.error(msg);
+    },
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("lawyers")
+        .update({ is_active: true })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
+      toast.success("Lawyer reactivated successfully.");
+    },
+    onError: (error: unknown) => {
+      const msg = parseLawyerDeleteError(error);
+      toast.error(msg);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // Safely remove non-historical dependent relationship records
+      const { error: lsErr } = await supabase.from("lawyer_services").delete().eq("lawyer_id", id);
+      if (lsErr) throw lsErr;
+
+      const { error: availErr } = await supabase.from("availability").delete().eq("lawyer_id", id);
+      if (availErr) throw availErr;
+
+      const { error: holErr } = await supabase.from("lawyer_holidays").delete().eq("lawyer_id", id);
+      if (holErr) throw holErr;
+
+      const { error: roleErr } = await supabase.from("user_roles").update({ lawyer_id: null }).eq("lawyer_id", id);
+      if (roleErr) throw roleErr;
+
+      const { error: delErr } = await supabase.from("lawyers").delete().eq("id", id);
+      if (delErr) throw delErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["lawyers"] });
+      queryClient.invalidateQueries({ queryKey: ["hero-content"] });
+      toast.success("Lawyer permanently deleted.");
+      setDeleteModalState(null);
+    },
+    onError: (error: unknown) => {
+      const formattedError = parseLawyerDeleteError(error);
+      if (deleteModalState && deleteModalState.step === "permanent_confirm") {
+        setDeleteModalState({
+          ...deleteModalState,
+          consultationCount: 1,
+          overrideErrorMessage: formattedError,
+        });
+      } else {
+        toast.error(formattedError);
+      }
     },
   });
 
@@ -211,8 +358,8 @@ export function DoctorsManager() {
       queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       toast.success("Featured Lawyer updated");
     },
-    onError: (error: Error) => {
-      toast.error(`Failed to set featured lawyer: ${error.message}`);
+    onError: (error: unknown) => {
+      toast.error(parseLawyerDeleteError(error));
     },
   });
 
@@ -319,10 +466,21 @@ export function DoctorsManager() {
       queryClient.invalidateQueries({ queryKey: ["hero-content"] });
       toast.success(editingLawyer ? "Lawyer updated" : "Lawyer created");
     },
-    onError: (error: Error) => {
+    onError: (error: unknown) => {
       setUploading(false);
-      toast.error(`Save failed: ${error.message}`);
+      toast.error(`Save failed: ${parseLawyerDeleteError(error)}`);
     },
+  });
+
+  const activeCount = (lawyers || []).filter((l) => l.is_active !== false).length;
+  const archivedCount = (lawyers || []).filter((l) => l.is_active === false).length;
+  const allCount = (lawyers || []).length;
+
+  const filteredLawyersList = (lawyers || []).filter((lawyer) => {
+    const isActive = lawyer.is_active !== false;
+    if (activeTab === "active") return isActive;
+    if (activeTab === "archived") return !isActive;
+    return true;
   });
 
   return (
@@ -345,6 +503,163 @@ export function DoctorsManager() {
           </button>
         )}
       </div>
+
+      {/* STEP 1 & STEP 2 CONFIRMATION MODALS */}
+      {deleteModalState && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-xl max-w-md w-full p-6 shadow-xl space-y-5 animate-in fade-in-50 zoom-in-95">
+            {/* STEP 1: CHOICE DIALOG ("Manage Lawyer Profile") */}
+            {deleteModalState.step === "choice" && (
+              <>
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 rounded-full bg-amber-500/10 text-amber-500 shrink-0">
+                    <Archive className="h-6 w-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-lg text-foreground">Manage Lawyer Profile</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Choose what you want to do with <span className="font-semibold text-foreground">{deleteModalState.lawyer.name}</span>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSelectArchive(deleteModalState.lawyer)}
+                    disabled={archiveMutation.isPending}
+                    className="w-full px-4 py-2.5 bg-secondary hover:bg-secondary/80 text-foreground border border-input rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    {archiveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <Archive className="h-4 w-4 text-amber-500" />
+                    <span>Archive Lawyer</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectDeletePermanently(deleteModalState.lawyer)}
+                    className="w-full px-4 py-2.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete Permanently</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDeleteModalState(null)}
+                    className="w-full px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors pt-1"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* STEP 2: PERMANENT DELETE CONFIRMATION & DEPENDENCY DIALOG */}
+            {deleteModalState.step === "permanent_confirm" && (
+              <>
+                {deleteModalState.checking ? (
+                  <div className="py-6 text-center space-y-3">
+                    <Loader2 className="h-8 w-8 text-primary animate-spin mx-auto" />
+                    <p className="text-sm font-medium text-foreground">
+                      Inspecting consultation history and database relationships...
+                    </p>
+                  </div>
+                ) : deleteModalState.consultationCount > 0 || deleteModalState.overrideErrorMessage ? (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-full bg-amber-500/10 text-amber-500 shrink-0">
+                        <AlertTriangle className="h-6 w-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-lg text-foreground">Historical Consultations Detected</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {deleteModalState.overrideErrorMessage ||
+                            `This lawyer has ${deleteModalState.consultationCount} historical consultation(s). Permanently deleting the lawyer is blocked because historical consultation records reference this lawyer to preserve client history.`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-xs text-amber-600 dark:text-amber-400">
+                      Permanently deleting the lawyer may affect historical records. Archive is the recommended option to preserve client data.
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteModalState(null)}
+                        disabled={archiveMutation.isPending || deleteMutation.isPending}
+                        className="px-4 py-2 border border-input rounded-md text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSelectArchive(deleteModalState.lawyer)}
+                        disabled={archiveMutation.isPending}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        {archiveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Archive Instead
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteMutation.mutate(deleteModalState.lawyer.id)}
+                        disabled={deleteMutation.isPending}
+                        className="px-4 py-2 bg-destructive/80 hover:bg-destructive text-destructive-foreground rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Delete Permanently
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-full bg-destructive/10 text-destructive shrink-0">
+                        <ShieldAlert className="h-6 w-6" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="font-bold text-lg text-foreground">Delete Lawyer Permanently?</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          This action permanently removes <span className="font-semibold text-foreground">{deleteModalState.lawyer.name}</span> and cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-secondary/60 border border-border rounded-lg text-xs text-muted-foreground">
+                      This lawyer has no historical consultations and can be permanently removed.
+                    </div>
+
+                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
+                      <button
+                        type="button"
+                        onClick={() => setDeleteModalState(null)}
+                        disabled={deleteMutation.isPending}
+                        className="px-4 py-2 border border-input rounded-md text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => deleteMutation.mutate(deleteModalState.lawyer.id)}
+                        disabled={deleteMutation.isPending}
+                        className="px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                      >
+                        {deleteMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Delete Permanently
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Form Drawer / Container */}
       {(isCreating || editingLawyer) && (
@@ -531,6 +846,40 @@ export function DoctorsManager() {
         </div>
       )}
 
+      {/* Filter Tabs */}
+      <div className="flex border-b border-border gap-2">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "active"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Active ({activeCount})
+        </button>
+        <button
+          onClick={() => setActiveTab("archived")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "archived"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Archived ({archivedCount})
+        </button>
+        <button
+          onClick={() => setActiveTab("all")}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "all"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          All ({allCount})
+        </button>
+      </div>
+
       {/* Lawyers Grid */}
       {isLoading ? (
         <div className="flex justify-center p-12">
@@ -540,24 +889,31 @@ export function DoctorsManager() {
         <div className="p-4 border border-destructive/30 bg-destructive/10 rounded-lg text-destructive text-sm">
           Failed to load lawyers list.
         </div>
-      ) : (lawyers || []).length === 0 ? (
+      ) : filteredLawyersList.length === 0 ? (
         <div className="p-12 text-center border border-dashed rounded-xl bg-card">
           <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-          <h3 className="font-semibold text-lg">No Lawyers Found</h3>
+          <h3 className="font-semibold text-lg">
+            {activeTab === "archived" ? "No Archived Lawyers" : "No Lawyers Found"}
+          </h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Add your firm&apos;s lawyers to display on the booking portal.
+            {activeTab === "archived"
+              ? "There are currently no archived or deactivated lawyers."
+              : "Add your firm's lawyers to display on the booking portal."}
           </p>
-          <button
-            onClick={handleCreateOpen}
-            className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg"
-          >
-            Add First Lawyer
-          </button>
+          {activeTab !== "archived" && (
+            <button
+              onClick={handleCreateOpen}
+              className="px-4 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-lg"
+            >
+              Add First Lawyer
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(lawyers || []).map((lawyer) => {
-            const isHero = lawyer.is_featured_hero || isLegacyHeroLawyer(lawyer.photo);
+          {filteredLawyersList.map((lawyer) => {
+            const isActive = lawyer.is_active !== false;
+            const isHero = isActive && (lawyer.is_featured_hero || isLegacyHeroLawyer(lawyer.photo));
             const lawyerImg = getLawyerImage(lawyer.id, cleanLawyerPhoto(lawyer.photo));
             const assignedServices = lawyer.lawyer_services || lawyer.doctor_services || [];
 
@@ -565,13 +921,24 @@ export function DoctorsManager() {
               <div
                 key={lawyer.id}
                 className={`border rounded-xl bg-card p-5 flex flex-col justify-between transition-all relative overflow-hidden ${
-                  isHero ? "ring-2 ring-amber-500/50 shadow-md" : "border-border"
+                  !isActive
+                    ? "opacity-75 bg-secondary/20 border-dashed border-border"
+                    : isHero
+                    ? "ring-2 ring-amber-500/50 shadow-md border-amber-500/30"
+                    : "border-border"
                 }`}
               >
                 {isHero && (
                   <div className="absolute top-0 right-0 bg-amber-500 text-black font-semibold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-lg flex items-center gap-1">
                     <Sparkles className="h-3 w-3 fill-black" />
                     Featured Hero
+                  </div>
+                )}
+
+                {!isActive && (
+                  <div className="absolute top-0 right-0 bg-slate-600 text-white font-semibold text-[10px] uppercase tracking-wider px-3 py-1 rounded-bl-lg flex items-center gap-1">
+                    <Archive className="h-3 w-3" />
+                    Archived
                   </div>
                 )}
 
@@ -583,7 +950,9 @@ export function DoctorsManager() {
                       className="h-16 w-16 rounded-full object-cover border border-border"
                     />
                     <div>
-                      <h3 className="font-semibold text-base">{lawyer.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-base">{lawyer.name}</h3>
+                      </div>
                       <p className="text-xs font-medium text-primary">{lawyer.specialization}</p>
                       <p className="text-xs text-muted-foreground">{lawyer.experience}</p>
                     </div>
@@ -616,18 +985,29 @@ export function DoctorsManager() {
                 </div>
 
                 <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-                  <button
-                    onClick={() => setHeroMutation.mutate(lawyer)}
-                    disabled={isHero || setHeroMutation.isPending}
-                    className={`text-xs font-medium flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors ${
-                      isHero
-                        ? "text-amber-500 bg-amber-500/10 cursor-default"
-                        : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    }`}
-                  >
-                    <Sparkles className={`h-3.5 w-3.5 ${isHero ? "fill-amber-500" : ""}`} />
-                    {isHero ? "Main Hero" : "Set Featured"}
-                  </button>
+                  {isActive ? (
+                    <button
+                      onClick={() => setHeroMutation.mutate(lawyer)}
+                      disabled={isHero || setHeroMutation.isPending}
+                      className={`text-xs font-medium flex items-center gap-1.5 px-2.5 py-1.5 rounded-md transition-colors ${
+                        isHero
+                          ? "text-amber-500 bg-amber-500/10 cursor-default"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      }`}
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 ${isHero ? "fill-amber-500" : ""}`} />
+                      {isHero ? "Main Hero" : "Set Featured"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => reactivateMutation.mutate(lawyer.id)}
+                      disabled={reactivateMutation.isPending}
+                      className="text-xs font-medium flex items-center gap-1 px-2.5 py-1.5 rounded-md text-emerald-600 hover:bg-emerald-500/10 transition-colors"
+                    >
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                      Reactivate
+                    </button>
+                  )}
 
                   <div className="flex items-center gap-2">
                     <button
@@ -638,13 +1018,9 @@ export function DoctorsManager() {
                       <Edit2 className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to remove ${lawyer.name}?`)) {
-                          deleteMutation.mutate(lawyer.id);
-                        }
-                      }}
+                      onClick={() => handleOpenDeleteChoiceModal(lawyer)}
                       className="p-1.5 text-destructive/80 hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                      title="Delete Lawyer"
+                      title="Manage / Delete Lawyer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

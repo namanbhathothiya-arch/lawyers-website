@@ -21,7 +21,6 @@ export type ConsultationWorkflowRecord = {
   status: ConsultationStatus;
   date: string;
   lawyer_id?: string;
-  doctor_id?: string;
 };
 
 export type AppointmentWorkflowRecord = ConsultationWorkflowRecord;
@@ -108,7 +107,7 @@ export function filterConsultations<TConsultation extends ConsultationWorkflowRe
       !options.statusFilter ||
       options.statusFilter === "all" ||
       consultation.status === options.statusFilter;
-    const targetLawyer = consultation.lawyer_id || consultation.doctor_id;
+    const targetLawyer = consultation.lawyer_id;
     const matchesLawyer =
       !targetLawyerFilter ||
       targetLawyerFilter === "all" ||

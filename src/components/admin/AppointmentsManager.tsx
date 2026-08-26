@@ -44,7 +44,6 @@ type PaymentStatus = "pending" | "paid" | "refund_pending" | "refunded" | "faile
 type ConsultationRecord = {
   id: string;
   lawyer_id: string;
-  doctor_id?: string;
   service_id: string;
   date: string;
   time_slot: string;
@@ -59,10 +58,6 @@ type ConsultationRecord = {
   payment_id?: string | null;
   order_id?: string | null;
   lawyer?: {
-    name: string;
-    specialization: string;
-  } | null;
-  doctor?: {
     name: string;
     specialization: string;
   } | null;
@@ -149,13 +144,8 @@ export function AppointmentsManager({ view = "all", role = "admin" }: Appointmen
         client_name: row.client_name || row.patient_name || "",
         client_phone: row.client_phone || row.patient_phone || "",
         client_email: row.client_email || row.patient_email || "",
-        patient_name: row.client_name || row.patient_name || "",
-        patient_phone: row.client_phone || row.patient_phone || "",
-        patient_email: row.client_email || row.patient_email || "",
         lawyer: row.lawyer || row.doctor,
-        doctor: row.lawyer || row.doctor,
-        lawyer_id: row.lawyer_id || row.doctor_id,
-        doctor_id: row.lawyer_id || row.doctor_id,
+        lawyer_id: row.lawyer_id,
       })) as ConsultationRecord[];
     },
   });

@@ -244,7 +244,6 @@ function AppointmentPage() {
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_signature: response.razorpay_signature,
                   lawyer_id: lawyer,
-                  doctor_id: lawyer,
                   service_id: service,
                   date: dateStr,
                   time_slot: slot,

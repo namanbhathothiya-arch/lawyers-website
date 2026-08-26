@@ -85,7 +85,7 @@ export function AvailabilityManager() {
       return (data || []).map((row) => ({
         ...row,
         lawyer: row.lawyer || (row as { doctor?: { name: string; specialization: string } }).doctor,
-        lawyer_id: row.lawyer_id || (row as { doctor_id?: string }).doctor_id,
+        lawyer_id: row.lawyer_id,
       }));
     },
   });

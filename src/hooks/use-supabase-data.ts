@@ -25,6 +25,7 @@ export interface DBLawyer {
   images?: string[] | string | null;
   bio?: string | null;
   is_featured_hero?: boolean;
+  is_active?: boolean;
   created_at?: string;
   phone?: string | null;
   mobile?: string | null;
@@ -116,6 +117,7 @@ export function useLawyers() {
       const { data, error } = await supabase
         .from("lawyers")
         .select("*")
+        .or("is_active.eq.true,is_active.is.null")
         .order("name", { ascending: true });
 
       if (error) {
@@ -349,8 +351,9 @@ export function useHeroContent() {
       const [lawyerResult, imageResult, bgImageResult] = await Promise.all([
         supabase
           .from("lawyers")
-          .select("id, name, specialization, experience, photo, bio, is_featured_hero")
+          .select("id, name, specialization, experience, photo, bio, is_featured_hero, is_active")
           .eq("is_featured_hero", true)
+          .or("is_active.eq.true,is_active.is.null")
           .limit(1),
         supabase
           .from("gallery_images")
@@ -487,7 +490,8 @@ export function useLawyersForService(serviceId: string) {
       return (data || [])
         .map((row) => row.lawyer)
         .filter(Boolean)
-        .map((lawyer) => lawyer as unknown as DBLawyer);
+        .map((lawyer) => lawyer as unknown as DBLawyer)
+        .filter((lawyer) => lawyer.is_active !== false);
     },
   });
 }

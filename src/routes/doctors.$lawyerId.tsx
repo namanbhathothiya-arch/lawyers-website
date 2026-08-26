@@ -90,15 +90,19 @@ function LawyerProfilePage() {
     );
   }
 
-  if (!lawyer) {
+  if (!lawyer || lawyer.is_active === false) {
     return (
       <section className="mx-auto max-w-xl px-4 py-20 text-center">
-        <h1 className="font-serif text-3xl text-white">Advocate Not Found</h1>
+        <h1 className="font-serif text-3xl text-white">
+          {lawyer && lawyer.is_active === false ? "Advocate Profile Inactive" : "Advocate Not Found"}
+        </h1>
         <p className="mt-3 text-sm text-slate-400">
-          This profile is not available. Browse the current advocates at the firm.
+          {lawyer && lawyer.is_active === false
+            ? "This advocate profile is archived and not currently accepting new consultations."
+            : "This profile is not available. Browse the current advocates at the firm."}
         </p>
         <Button asChild className="mt-6 bg-[#D6A85F] text-[#061A35] hover:bg-[#E5B86E] font-bold">
-          <Link to="/doctors">View all lawyers</Link>
+          <Link to="/doctors">View all active lawyers</Link>
         </Button>
       </section>
     );
