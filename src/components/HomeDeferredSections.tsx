@@ -4,7 +4,6 @@ import { ChevronDown, Mail, MapPin, Phone, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ClinicGallery } from "@/components/ClinicGallery";
 import { DoctorProfileCard } from "@/components/DoctorProfileCard";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { FAQSection } from "@/components/FAQSection";
@@ -41,22 +40,6 @@ export function HomeDeferredSections() {
   return (
     <>
       <HomeAboutSection />
-
-      <section
-        id="gallery"
-        className="bg-[#F8FAFC] border-b border-slate-200 py-16 sm:py-20"
-      >
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="Our Firm Chambers"
-            title="Chambers & Office Gallery"
-            subtitle="Explore our legal chambers, consultation rooms, conference hall, and research facilities."
-          />
-          <div className="mt-10">
-            <ClinicGallery />
-          </div>
-        </div>
-      </section>
 
       <section className="bg-[#F1F5F9] border-b border-slate-200 py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

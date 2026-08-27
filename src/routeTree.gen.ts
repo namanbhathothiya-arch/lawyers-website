@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as ServicesRouteImport } from './routes/services'
-import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DoctorsRouteImport } from './routes/doctors'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AppointmentRouteImport } from './routes/appointment'
@@ -26,7 +25,6 @@ import { Route as AdminServicesRouteImport } from './routes/admin/services'
 import { Route as AdminServiceSectionsRouteImport } from './routes/admin/service-sections'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminHolidaysRouteImport } from './routes/admin/holidays'
-import { Route as AdminGalleryRouteImport } from './routes/admin/gallery'
 import { Route as AdminFaqsRouteImport } from './routes/admin/faqs'
 import { Route as AdminDoctorsRouteImport } from './routes/admin/doctors'
 import { Route as AdminAvailabilityRouteImport } from './routes/admin/availability'
@@ -42,11 +40,6 @@ const StaffRoute = StaffRouteImport.update({
 const ServicesRoute = ServicesRouteImport.update({
   id: '/services',
   path: '/services',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GalleryRoute = GalleryRouteImport.update({
-  id: '/gallery',
-  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DoctorsRoute = DoctorsRouteImport.update({
@@ -119,11 +112,6 @@ const AdminHolidaysRoute = AdminHolidaysRouteImport.update({
   path: '/admin/holidays',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminGalleryRoute = AdminGalleryRouteImport.update({
-  id: '/admin/gallery',
-  path: '/admin/gallery',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminFaqsRoute = AdminFaqsRouteImport.update({
   id: '/admin/faqs',
   path: '/admin/faqs',
@@ -162,7 +150,6 @@ export interface FileRoutesByFullPath {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRouteWithChildren
-  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/about-us': typeof AdminAboutUsRoute
@@ -170,7 +157,6 @@ export interface FileRoutesByFullPath {
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
-  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
@@ -188,7 +174,6 @@ export interface FileRoutesByTo {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRouteWithChildren
-  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/about-us': typeof AdminAboutUsRoute
@@ -196,7 +181,6 @@ export interface FileRoutesByTo {
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
-  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
@@ -215,7 +199,6 @@ export interface FileRoutesById {
   '/appointment': typeof AppointmentRoute
   '/contact': typeof ContactRoute
   '/doctors': typeof DoctorsRouteWithChildren
-  '/gallery': typeof GalleryRoute
   '/services': typeof ServicesRouteWithChildren
   '/staff': typeof StaffRoute
   '/admin/about-us': typeof AdminAboutUsRoute
@@ -223,7 +206,6 @@ export interface FileRoutesById {
   '/admin/availability': typeof AdminAvailabilityRoute
   '/admin/doctors': typeof AdminDoctorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
-  '/admin/gallery': typeof AdminGalleryRoute
   '/admin/holidays': typeof AdminHolidaysRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/service-sections': typeof AdminServiceSectionsRouteWithChildren
@@ -243,7 +225,6 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
-    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/about-us'
@@ -251,7 +232,6 @@ export interface FileRouteTypes {
     | '/admin/availability'
     | '/admin/doctors'
     | '/admin/faqs'
-    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/service-sections'
@@ -269,7 +249,6 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
-    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/about-us'
@@ -277,7 +256,6 @@ export interface FileRouteTypes {
     | '/admin/availability'
     | '/admin/doctors'
     | '/admin/faqs'
-    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/service-sections'
@@ -295,7 +273,6 @@ export interface FileRouteTypes {
     | '/appointment'
     | '/contact'
     | '/doctors'
-    | '/gallery'
     | '/services'
     | '/staff'
     | '/admin/about-us'
@@ -303,7 +280,6 @@ export interface FileRouteTypes {
     | '/admin/availability'
     | '/admin/doctors'
     | '/admin/faqs'
-    | '/admin/gallery'
     | '/admin/holidays'
     | '/admin/login'
     | '/admin/service-sections'
@@ -322,7 +298,6 @@ export interface RootRouteChildren {
   AppointmentRoute: typeof AppointmentRoute
   ContactRoute: typeof ContactRoute
   DoctorsRoute: typeof DoctorsRouteWithChildren
-  GalleryRoute: typeof GalleryRoute
   ServicesRoute: typeof ServicesRouteWithChildren
   StaffRoute: typeof StaffRoute
   AdminAboutUsRoute: typeof AdminAboutUsRoute
@@ -330,7 +305,6 @@ export interface RootRouteChildren {
   AdminAvailabilityRoute: typeof AdminAvailabilityRoute
   AdminDoctorsRoute: typeof AdminDoctorsRoute
   AdminFaqsRoute: typeof AdminFaqsRoute
-  AdminGalleryRoute: typeof AdminGalleryRoute
   AdminHolidaysRoute: typeof AdminHolidaysRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminServiceSectionsRoute: typeof AdminServiceSectionsRouteWithChildren
@@ -354,13 +328,6 @@ declare module '@tanstack/react-router' {
       path: '/services'
       fullPath: '/services'
       preLoaderRoute: typeof ServicesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gallery': {
-      id: '/gallery'
-      path: '/gallery'
-      fullPath: '/gallery'
-      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/doctors': {
@@ -461,13 +428,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminHolidaysRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/gallery': {
-      id: '/admin/gallery'
-      path: '/admin/gallery'
-      fullPath: '/admin/gallery'
-      preLoaderRoute: typeof AdminGalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/faqs': {
       id: '/admin/faqs'
       path: '/admin/faqs'
@@ -553,7 +513,6 @@ const rootRouteChildren: RootRouteChildren = {
   AppointmentRoute: AppointmentRoute,
   ContactRoute: ContactRoute,
   DoctorsRoute: DoctorsRouteWithChildren,
-  GalleryRoute: GalleryRoute,
   ServicesRoute: ServicesRouteWithChildren,
   StaffRoute: StaffRoute,
   AdminAboutUsRoute: AdminAboutUsRoute,
@@ -561,7 +520,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAvailabilityRoute: AdminAvailabilityRoute,
   AdminDoctorsRoute: AdminDoctorsRoute,
   AdminFaqsRoute: AdminFaqsRoute,
-  AdminGalleryRoute: AdminGalleryRoute,
   AdminHolidaysRoute: AdminHolidaysRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminServiceSectionsRoute: AdminServiceSectionsRouteWithChildren,

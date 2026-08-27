@@ -1,4 +1,5 @@
-import doc1 from "@/assets/doctor-1.jpg";
+// Advocate fallback: professional Indian advocate in black coat + white bands (not a doctor)
+import advocateFallback from "@/assets/advocate-fallback.jpg";
 
 export const LAW_FIRM = {
   name: "Sharma & Associates",
@@ -41,7 +42,7 @@ export const LAWYERS: Lawyer[] = [
     name: "Adv. Raj Sharma",
     specialization: "Corporate Law",
     experience: "Experienced legal counsel",
-    photo: doc1,
+    photo: advocateFallback,
     bio: "Compassionate, advanced legal care with expertise in corporate law.",
   },
 ];
@@ -128,7 +129,7 @@ export const TESTIMONIALS = [
 ];
 
 export const LAWYER_IMAGES: Record<string, string> = {
-  "adv-raj-sharma": doc1,
+  "adv-raj-sharma": advocateFallback,
 };
 
 export const DOCTOR_IMAGES = LAWYER_IMAGES;
@@ -141,7 +142,7 @@ export function getLawyerImage(id: string, dbPhoto?: string | null) {
     return dbPhoto;
   }
   const key = id ? id.toLowerCase().replace(/\s+/g, "-") : "";
-  return LAWYER_IMAGES[key] || LAWYER_IMAGES[id] || doc1;
+  return LAWYER_IMAGES[key] || LAWYER_IMAGES[id] || advocateFallback;
 }
 
 export const getDoctorImage = getLawyerImage;

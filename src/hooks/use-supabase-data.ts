@@ -2,9 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import {
   cleanDoctorPhoto,
-  cleanHeroImageUrl,
   isLegacyHeroDoctor,
-  isLegacyHeroImage,
 } from "@/lib/hero-content";
 
 export const PUBLIC_CONTENT_QUERY_OPTIONS = {
@@ -39,15 +37,6 @@ export interface DBLawyer {
 }
 
 export type DBDoctor = DBLawyer;
-
-export interface HeroGalleryImage {
-  id: string;
-  image_url: string;
-  title?: string | null;
-  description?: string | null;
-  is_hero_image: boolean;
-  is_hero_background?: boolean;
-}
 
 export interface DBLegalService {
   id: string;
@@ -341,45 +330,23 @@ export function useTestimonials() {
 export function useHeroContent() {
   return useQuery<{
     lawyer: DBLawyer | null;
-    image: HeroGalleryImage | null;
-    backgroundImage: HeroGalleryImage | null;
     doctor?: DBLawyer | null;
   }>({
     queryKey: ["hero-content"],
     ...PUBLIC_CONTENT_QUERY_OPTIONS,
     queryFn: async () => {
-      const [lawyerResult, imageResult, bgImageResult] = await Promise.all([
-        supabase
-          .from("lawyers")
-          .select("id, name, specialization, experience, photo, bio, is_featured_hero, is_active")
-          .eq("is_featured_hero", true)
-          .or("is_active.eq.true,is_active.is.null")
-          .limit(1),
-        supabase
-          .from("gallery_images")
-          .select("id, image_url, title, description, is_hero_image, is_hero_background")
-          .eq("is_hero_image", true)
-          .limit(1),
-        supabase
-          .from("gallery_images")
-          .select("id, image_url, title, description, is_hero_image, is_hero_background")
-          .eq("is_hero_background", true)
-          .limit(1),
-      ]);
+      const { data, error } = await supabase
+        .from("lawyers")
+        .select("id, name, specialization, experience, photo, bio, is_featured_hero, is_active")
+        .eq("is_featured_hero", true)
+        .or("is_active.eq.true,is_active.is.null")
+        .limit(1);
 
-      if (lawyerResult.error) {
-        console.warn("Unable to load featured hero lawyer:", lawyerResult.error.message);
-      }
-      if (imageResult.error) {
-        console.warn("Unable to load featured hero image:", imageResult.error.message);
-      }
-      if (bgImageResult.error) {
-        console.warn("Unable to load featured hero background image:", bgImageResult.error.message);
+      if (error) {
+        console.warn("Unable to load featured hero lawyer:", error.message);
       }
 
-      let lawyer = (lawyerResult.data?.[0] as DBLawyer | undefined) || null;
-      let image = (imageResult.data?.[0] as HeroGalleryImage | undefined) || null;
-      let backgroundImage = (bgImageResult.data?.[0] as HeroGalleryImage | undefined) || null;
+      let lawyer = (data?.[0] as DBLawyer | undefined) || null;
 
       if (!lawyer) {
         const { data: legacyLawyers } = await supabase
@@ -391,21 +358,7 @@ export function useHeroContent() {
         }
       }
 
-      if (!image) {
-        const { data: legacyImages } = await supabase
-          .from("gallery_images")
-          .select("id, image_url, title, description");
-        const legacyImage = (legacyImages || []).find((item) => isLegacyHeroImage(item.image_url));
-        if (legacyImage) {
-          image = {
-            ...legacyImage,
-            image_url: cleanHeroImageUrl(legacyImage.image_url),
-            is_hero_image: true,
-          };
-        }
-      }
-
-      return { lawyer, image, backgroundImage, doctor: lawyer };
+      return { lawyer, doctor: lawyer };
     },
   });
 }

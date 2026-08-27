@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { lazy, Suspense, type CSSProperties } from "react";
+import { lazy, Suspense } from "react";
 import {
   ArrowRight,
   ShieldCheck,
@@ -17,12 +17,14 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroImg from "@/assets/hero-clinic.jpg";
-import doctorImg from "@/assets/doctor-1.jpg";
-import { LAW_FIRM, getDoctorImage } from "@/lib/clinic-data";
-import { useHeroContent } from "@/hooks/use-supabase-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeferredSection } from "@/components/DeferredSection";
+// Fixed static law-themed hero image — does NOT depend on gallery_images
+import heroLawImg from "@/assets/hero-law.jpg";
+// Advocate fallback — professional Indian advocate in black coat with white bands
+import advocateFallbackImg from "@/assets/advocate-fallback.jpg";
+import { LAW_FIRM, getDoctorImage } from "@/lib/clinic-data";
+import { useHeroContent } from "@/hooks/use-supabase-data";
 
 const HomeDeferredSections = lazy(() =>
   import("@/components/HomeDeferredSections").then((module) => ({
@@ -59,12 +61,10 @@ function HomePage() {
   const heroDoctorName = heroDoctor?.name || LAW_FIRM.lawyer;
   const heroDoctorSpecialization = heroDoctor?.specialization || LAW_FIRM.specialization;
   const heroDoctorExperience = heroDoctor?.experience || "";
-  const heroDoctorPhoto = heroDoctor ? getDoctorImage(heroDoctor.id, heroDoctor.photo) : doctorImg;
-  const heroImage = heroContent?.image?.image_url || heroImg;
-  const heroImageAlt =
-    heroContent?.image?.title || `Legal chambers and consultation rooms at ${LAW_FIRM.name}`;
-
-  const heroBgImage = heroContent?.backgroundImage?.image_url;
+  // Use custom Supabase photo if available; otherwise use advocate fallback (not a doctor image)
+  const heroDoctorPhoto = heroDoctor
+    ? getDoctorImage(heroDoctor.id, heroDoctor.photo) || advocateFallbackImg
+    : advocateFallbackImg;
 
   const firmSchema = {
     "@context": "https://schema.org",
@@ -112,37 +112,27 @@ function HomePage() {
 
       {/* HERO SECTION */}
       <section className="private-hero relative isolate overflow-hidden bg-[#03142B] pb-20 pt-8 sm:pb-28 lg:pb-36 lg:pt-12">
-        {heroBgImage ? (
-          <div className="absolute inset-0 -z-10 overflow-hidden">
-            <img
-              src={heroBgImage}
-              alt="Hero Background"
-              className="h-full w-full object-cover object-center filter brightness-[0.25] contrast-[1.1]"
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(90deg, rgba(3,20,43,0.96) 0%, rgba(3,20,43,0.90) 40%, rgba(3,20,43,0.70) 65%, rgba(3,20,43,0.35) 100%)",
-              }}
-            />
-          </div>
-        ) : (
+        {/* FIXED LAW-THEMED BACKGROUND — static asset, no gallery dependency */}
+        <div className="absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+          <img
+            src={heroLawImg}
+            alt=""
+            className="h-full w-full object-cover object-center filter brightness-[0.22] contrast-[1.05]"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
           <div
-            className="absolute inset-0 -z-10"
+            className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at 20% 30%, #061A35 0%, #03142B 70%, #020C1B 100%)",
+                "linear-gradient(90deg, rgba(3,20,43,0.97) 0%, rgba(3,20,43,0.92) 40%, rgba(3,20,43,0.72) 65%, rgba(3,20,43,0.38) 100%)",
             }}
-          >
-            <div className="private-hero-grid absolute inset-0 opacity-40" />
-            <div className="absolute -left-24 top-8 h-80 w-80 rounded-full bg-[#12345A]/40 blur-3xl" />
-            <div className="absolute -right-20 bottom-8 h-96 w-96 rounded-full bg-[#12345A]/25 blur-3xl" />
-          </div>
-        )}
+          />
+        </div>
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[1fr_1.08fr] lg:items-center">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:items-center">
             {/* LEFT COLUMN */}
             <div className="hero-enter relative z-10 pt-4">
               <div className="inline-flex items-center gap-2.5 rounded-full border border-[#D6A85F]/30 bg-[#F5F4EF] px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#061A35] shadow-md backdrop-blur-md">
@@ -213,23 +203,24 @@ function HomePage() {
               </div>
             </div>
 
-            {/* RIGHT COLUMN (HERO MEDIA & FLOATING CARD) */}
+            {/* RIGHT COLUMN — FIXED LAW IMAGE + PROMINENT ADVOCATE CARD */}
             <div className="hero-enter hero-enter-late relative">
+              {/* Law-themed image panel */}
               <div className="relative overflow-hidden rounded-[20px] border border-white/15 bg-slate-950 shadow-2xl">
                 <img
-                  src={heroImage}
-                  alt={heroImageAlt}
-                  width={1600}
-                  height={1024}
+                  src={heroLawImg}
+                  alt="Law chambers with scales of justice, law books, and the Indian Constitution"
+                  width={1280}
+                  height={854}
                   loading="eager"
                   decoding="async"
                   fetchPriority="high"
-                  className="block h-auto w-full object-cover object-top lg:h-[500px] filter brightness-[0.92] contrast-[1.05]"
+                  className="block h-auto w-full object-cover object-center lg:h-[520px] filter brightness-[0.88] contrast-[1.05]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#03142B]/70 via-transparent to-transparent" />
-                
+                <div className="absolute inset-0 bg-gradient-to-t from-[#03142B]/75 via-transparent to-transparent" />
+
                 {/* STATUS BADGE */}
-                <div className="absolute left-6 top-6 inline-flex items-center gap-2.5 rounded-full border border-slate-200/80 bg-[#F5F4EF] px-4 py-2 text-xs font-semibold text-[#061A35] shadow-lg backdrop-blur-md">
+                <div className="absolute left-5 top-5 inline-flex items-center gap-2.5 rounded-full border border-slate-200/80 bg-[#F5F4EF] px-4 py-2 text-xs font-semibold text-[#061A35] shadow-lg backdrop-blur-md">
                   <span className="relative flex h-2.5 w-2.5">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#22C55E] opacity-75" />
                     <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#22C55E]" />
@@ -238,66 +229,87 @@ function HomePage() {
                 </div>
               </div>
 
-              {/* FEATURED ADVOCATE FLOATING CARD */}
-              <article className="hero-doctor-card relative z-20 mt-6 lg:mt-0 lg:absolute lg:-bottom-10 lg:-left-8 lg:w-[92%] lg:max-w-[540px] rounded-[20px] border border-slate-200/90 bg-[#F5F4EF] p-5 sm:p-6 text-[#061A35] shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1">
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-[1fr_auto]">
-                  {/* LEFT DETAILS */}
-                  <div className="flex items-start gap-4">
-                    <img
-                      src={heroDoctorPhoto}
-                      alt={`${heroDoctorName}, ${heroDoctorSpecialization}`}
-                      width={256}
-                      height={256}
-                      loading="eager"
-                      decoding="async"
-                      className="h-20 w-20 shrink-0 rounded-2xl object-cover object-top ring-2 ring-[#B88745]/30 shadow-md"
-                    />
-                    <div className="min-w-0">
-                      <div className="text-[0.65rem] font-bold uppercase tracking-widest text-[#B88745]">
-                        Featured Advocate
-                      </div>
-                      <h2 className="mt-0.5 truncate font-serif text-xl font-bold text-[#061A35]">
-                        {heroDoctorName}
-                      </h2>
-                      <p className="truncate text-xs font-medium text-[#334B68] mt-0.5">
-                        {heroDoctorSpecialization}
-                      </p>
-                      {heroDoctorExperience && (
-                        <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-[#334B68]">
-                          <User className="h-3.5 w-3.5 text-[#B88745]" aria-hidden="true" />
-                          <span>
-                            {heroDoctorExperience}
-                            {!heroDoctorExperience.toLowerCase().includes("experience") && " experience"}
-                          </span>
-                        </div>
-                      )}
-                      {heroDoctor?.id && (
-                        <Link
-                          to="/doctors/$lawyerId"
-                          params={{ lawyerId: heroDoctor.id }}
-                          className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-[#061A35] hover:text-[#B88745] transition-colors"
-                        >
-                          <span>View profile</span>
-                          <ArrowRight className="h-3 w-3" aria-hidden="true" />
-                        </Link>
-                      )}
+              {/* FEATURED ADVOCATE FLOATING CARD — larger and more prominent */}
+              <article
+                className="hero-doctor-card relative z-20 mt-5 lg:mt-0 lg:absolute lg:-bottom-14 lg:-left-10 lg:w-[96%] lg:max-w-[580px] rounded-[20px] border-2 border-[#D6A85F]/40 bg-[#F5F4EF] p-6 sm:p-7 text-[#061A35] shadow-[0_24px_60px_rgba(0,0,0,0.32)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1"
+                aria-label={`Featured Advocate: ${heroDoctorName}`}
+              >
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-[auto_1fr_auto]">
+                  {/* ADVOCATE PHOTO — large and prominent */}
+                  <img
+                    src={heroDoctorPhoto}
+                    alt={`${heroDoctorName}, ${heroDoctorSpecialization} — Professional Advocate`}
+                    width={400}
+                    height={400}
+                    loading="eager"
+                    decoding="async"
+                    className="h-28 w-28 sm:h-32 sm:w-32 shrink-0 rounded-2xl object-cover object-top ring-2 ring-[#B88745]/40 shadow-lg self-start"
+                  />
+
+                  {/* DETAILS */}
+                  <div className="min-w-0 flex flex-col justify-center">
+                    <div className="text-[0.62rem] font-bold uppercase tracking-widest text-[#B88745]">
+                      Featured Advocate
                     </div>
+                    <h2 className="mt-1 font-serif text-2xl font-bold text-[#061A35] leading-tight">
+                      {heroDoctorName}
+                    </h2>
+                    <p className="text-sm font-medium text-[#334B68] mt-0.5 truncate">
+                      {heroDoctorSpecialization}
+                    </p>
+                    {heroDoctorExperience && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#334B68]">
+                        <User className="h-3.5 w-3.5 text-[#B88745] shrink-0" aria-hidden="true" />
+                        <span>
+                          {heroDoctorExperience}
+                          {!heroDoctorExperience.toLowerCase().includes("experience") && " experience"}
+                        </span>
+                      </div>
+                    )}
+                    {heroDoctor?.id && (
+                      <Link
+                        to="/doctors/$lawyerId"
+                        params={{ lawyerId: heroDoctor.id }}
+                        className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#061A35] hover:text-[#B88745] transition-colors w-fit"
+                      >
+                        <span>View full profile</span>
+                        <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                      </Link>
+                    )}
                   </div>
 
-                  {/* RIGHT QUOTE */}
-                  <div className="hidden sm:block border-l border-slate-300/60 pl-5 max-w-[190px]">
-                    <Quote className="h-5 w-5 text-[#B88745] fill-[#B88745]/20" aria-hidden="true" />
-                    <p className="mt-1 font-serif text-xs leading-relaxed text-[#334B68] italic">
+                  {/* RIGHT QUOTE — hidden on small screens */}
+                  <div className="hidden sm:flex flex-col justify-center border-l border-slate-300/60 pl-5 max-w-[180px]">
+                    <Quote className="h-5 w-5 text-[#B88745] fill-[#B88745]/20 shrink-0" aria-hidden="true" />
+                    <p className="mt-1.5 font-serif text-xs leading-relaxed text-[#334B68] italic">
                       Dedicated to protecting your rights and securing the best possible outcome.
                     </p>
                   </div>
+                </div>
+
+                {/* BOTTOM CTA ROW */}
+                <div className="mt-5 flex flex-col gap-2 pt-4 border-t border-slate-200/70 sm:flex-row sm:items-center sm:justify-between">
+                  <Button
+                    asChild
+                    size="sm"
+                    className="min-h-10 bg-[#061A35] hover:bg-[#0d2a50] text-[#F5F4EF] font-semibold rounded-xl text-xs px-5 shadow-md"
+                  >
+                    <Link to="/appointment" className="inline-flex items-center gap-1.5">
+                      <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                      Book Consultation
+                    </Link>
+                  </Button>
+                  <span className="inline-flex items-center gap-1.5 text-[0.7rem] font-medium text-[#334B68]">
+                    <ShieldCheck className="h-3.5 w-3.5 text-[#B88745]" aria-hidden="true" />
+                    Confidential consultation
+                  </span>
                 </div>
               </article>
             </div>
           </div>
 
           {/* BOTTOM TRUST FEATURES BAR */}
-          <div className="mt-20 lg:mt-24 rounded-2xl border border-slate-200/70 bg-[#F4F5F7] p-6 shadow-sm">
+          <div className="mt-24 lg:mt-28 rounded-2xl border border-slate-200/70 bg-[#F4F5F7] p-6 shadow-sm">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-slate-200/80">
               <div className="flex items-center gap-4 lg:px-4">
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white text-[#C5A059] shadow-xs border border-slate-200/60">

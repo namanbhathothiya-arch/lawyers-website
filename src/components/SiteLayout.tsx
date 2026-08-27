@@ -30,7 +30,6 @@ const nav = [
   { to: "/", label: "Home" },
   { to: "/doctors", label: "Lawyers" },
   { to: "/services", label: "Legal Services" },
-  { to: "/gallery", label: "Gallery" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -39,7 +38,6 @@ const clientLinks = [
   { to: "/appointment", label: "Book a Consultation" },
   { to: "/services", label: "Our Legal Services" },
   { to: "/doctors", label: "Find a Lawyer" },
-  { to: "/gallery", label: "Firm Gallery" },
   { to: "/contact", label: "Get Directions" },
 ] as const;
 
